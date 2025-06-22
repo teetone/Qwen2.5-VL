@@ -26,12 +26,18 @@ VIDEOCHATGPT = {
     "data_path": "PATH_TO_VIDEOCHATGPT_DATA",
 }
 
+ROBO_REWARD_BENCH = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/benchmarking/benchmarking/benchmark_output/scenarios/robo_reward_bench/output/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/benchmarking/benchmarking/benchmark_output/scenarios/robo_reward_bench",
+}
+
 data_dict = {
     "cambrian_737k": CAMBRIAN_737K,
     "cambrian_737k_pack": CAMBRIAN_737K_PACK,
     "mp_doc": MP_DOC,
     "clevr_mc": CLEVR_MC,
     "videochatgpt": VIDEOCHATGPT,
+    "robo_reward_bench": ROBO_REWARD_BENCH,
 }
 
 

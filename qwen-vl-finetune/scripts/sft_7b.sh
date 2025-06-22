@@ -20,7 +20,7 @@ grad_accum_steps=4
 entry_file=qwenvl/train/train_qwen.py
 
 # Dataset configuration (replace with public dataset names)
-datasets=public_dataset1,public_dataset2
+datasets="robo_reward_bench%100"
 
 # Output configuration
 run_name="qwen2vl-baseline"

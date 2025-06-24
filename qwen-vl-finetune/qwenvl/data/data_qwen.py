@@ -406,6 +406,12 @@ class LazySupervisedDataset(Dataset):
                     ]
                     results = [self.process_video(file) for file in video_file]
                     video, video_grid_thw, second_per_grid_ts = zip(*results)
+                    # tony: added to support multiple videos
+                    second_per_grid_ts = [t for sub in second_per_grid_ts for t in sub]
+                    video_grid_thw = [
+                        thw for sub in video_grid_thw
+                        for thw in (sub if isinstance(sub, list) else [sub])
+                    ]
                 else:
                     video_file = video_file[0]
                     video_file = os.path.join(video_folder, video_file)

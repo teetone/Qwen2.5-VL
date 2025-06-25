@@ -14,6 +14,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+from datetime import datetime
 import os
 import logging
 import pathlib
@@ -34,6 +35,7 @@ from trainer import replace_qwen2_vl_attention_class
 from transformers import (
     Qwen2VLForConditionalGeneration,
     Qwen2_5_VLForConditionalGeneration,
+    TrainerCallback
 )
 from qwenvl.data.data_qwen import make_supervised_data_module
 from qwenvl.data.data_qwen_packed import make_supervised_data_module_packed
@@ -45,6 +47,27 @@ from qwenvl.train.argument import (
 from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Trainer
 
 local_rank = None
+
+class HFSaverCallback(TrainerCallback):
+    """At every trainer save event, write a Hugging-Face-ready checkpoint to
+      <output_dir>/hf_checkpoints/step-<global_step>.
+    """
+
+    def __init__(self, tokenizer, image_processor, root_dir: pathlib.Path):
+        self.tokenizer = tokenizer
+        self.image_processor = image_processor
+        self.root_dir = root_dir
+
+    def on_save(self, args, state, control, **kwargs):
+        ckpt = self.root_dir / f"step-{state.global_step}"
+        ckpt.mkdir(parents=True, exist_ok=True)
+        # 1. model weights + config
+        kwargs["model"].save_pretrained(ckpt)
+        # 2. tokenizer + processor so the folder is directly loadable
+        self.tokenizer.save_pretrained(ckpt)
+        self.image_processor.save_pretrained(ckpt)
+        logging.info(f"[HF-Saver] wrote {ckpt}")
+        return control
 
 
 def rank0_print(*args):
@@ -157,8 +180,13 @@ def train(attn_implementation="flash_attention_2"):
         data_module = make_supervised_data_module_packed(tokenizer=tokenizer, data_args=data_args)
     else:
         data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+
+    hf_ckpt_root = pathlib.Path(training_args.output_dir) / "hf_checkpoints"
+    hf_ckpt_root.mkdir(parents=True, exist_ok=True)
+    hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
+
     trainer = Trainer(
-        model=model, processing_class=tokenizer, args=training_args, **data_module
+        model=model, processing_class=tokenizer, args=training_args, callbacks=[hf_saver_cb], **data_module
     )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):

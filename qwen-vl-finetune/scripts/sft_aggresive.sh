@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=1e-5                        # full-parameter / adapter FT; use 2e-4 if LoRA-only
 PER_GPU_BATCH=4
 GRAD_ACCUM=4                   # → global batch = 16
-MAX_STEPS=3000                 # ~120 “epochs” with global batch 16
+MAX_STEPS=3000
 EVAL_STEPS=100
 SAVE_STEPS=${EVAL_STEPS}
 
@@ -32,7 +32,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robo-ft"
-OUTPUT_DIR="./output_aggresive"
+OUTPUT_DIR="./output_aggresive_6_25"
 
 ############################
 # Argument string

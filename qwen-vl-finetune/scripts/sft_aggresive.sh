@@ -53,13 +53,11 @@ ARGS="
  --gradient_accumulation_steps ${GRAD_ACCUM} \
  --max_pixels 50176 \
  --min_pixels 784 \
- --evaluation_strategy steps \
+ --eval_strategy "no" \
  --eval_steps ${EVAL_STEPS} \
  --save_strategy steps \
  --save_steps ${SAVE_STEPS} \
  --save_total_limit 2 \
- --load_best_model_at_end \
- --metric_for_best_model eval_loss --greater_is_better False \
  --learning_rate ${LR} \
  --weight_decay 0 \
  --warmup_ratio 0.03 \

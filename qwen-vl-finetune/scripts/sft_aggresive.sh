@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=1e-5                        # full-parameter / adapter FT; use 2e-4 if LoRA-only
 PER_GPU_BATCH=4
 GRAD_ACCUM=4                   # → global batch = 16
-MAX_STEPS=3000
+MAX_STEPS=1000
 EVAL_STEPS=100
 SAVE_STEPS=${EVAL_STEPS}
 

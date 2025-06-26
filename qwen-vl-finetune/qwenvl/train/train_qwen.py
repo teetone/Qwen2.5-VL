@@ -198,7 +198,12 @@ def train(attn_implementation="flash_attention_2"):
     hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
 
     trainer = Trainer(
-        model=model, processing_class=tokenizer, args=training_args, callbacks=[hf_saver_cb], **data_module
+        model=model,
+        processing_class=tokenizer,
+        args=training_args,
+        # TODO: this is broken
+        # callbacks=[hf_saver_cb],
+        **data_module
     )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):

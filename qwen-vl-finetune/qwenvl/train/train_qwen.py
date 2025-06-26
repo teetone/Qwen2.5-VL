@@ -53,19 +53,27 @@ class HFSaverCallback(TrainerCallback):
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.root_dir = root_dir
-        self.trainer = None
+        self.trainer = None          # will be set once on_train_begin
 
+    # 1️⃣ grab the trainer reference when training starts
+    def on_train_begin(self, args, state, control, **kwargs):
+        self.trainer = kwargs["trainer"]          # never None here
+        return control
+
+    # 2️⃣ save HF-ready checkpoint every save event
     def on_save(self, args, state, control, **kwargs):
-        if args.local_rank not in (-1, 0):
+        if args.local_rank not in (-1, 0):        # Rank-0 only
             return control
 
         model = self.trainer.model
+        # ZeRO-3: gather full weights
         full_state = self.trainer.accelerator.get_state_dict(model)
 
         ckpt = self.root_dir / f"step-{state.global_step}"
         ckpt.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(ckpt, state_dict=full_state)
 
+        # save tokenizer / processor only the first time
         if not (ckpt / "tokenizer_config.json").exists():
             self.tokenizer.save_pretrained(ckpt)
             self.image_processor.save_pretrained(ckpt)

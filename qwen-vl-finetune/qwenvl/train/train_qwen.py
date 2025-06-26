@@ -49,30 +49,32 @@ from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Tr
 local_rank = None
 
 class HFSaverCallback(TrainerCallback):
-    def __init__(self, tokenizer, image_processor, root_dir):
+    def __init__(self, tokenizer, image_processor, root_dir: pathlib.Path):
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.root_dir = root_dir
+        self.trainer = None            # will be set right after Trainer is built
 
     def on_save(self, args, state, control, **kwargs):
         # rank-0 only
         if args.local_rank not in (-1, 0):
             return control
 
-        trainer  = kwargs["trainer"]            # ←  access the trainer
-        ckpt_dir = self.root_dir / f"step-{state.global_step}"
-        ckpt_dir.mkdir(parents=True, exist_ok=True)
+        assert self.trainer is not None, "trainer reference not set"
+        model = self.trainer.model
 
-        # 1. gather weights from all ZeRO shards
-        full_sd = trainer.accelerator.get_state_dict(trainer.model)
-        trainer.model.save_pretrained(ckpt_dir, state_dict=full_sd)
+        # ZeRO-3: gather full weights
+        full_state = self.trainer.accelerator.get_state_dict(model)
 
-        # 2. save tokenizer + processor once
-        if not (ckpt_dir / "tokenizer_config.json").exists():
-            self.tokenizer.save_pretrained(ckpt_dir)
-            self.image_processor.save_pretrained(ckpt_dir)
+        ckpt = self.root_dir / f"step-{state.global_step}"
+        ckpt.mkdir(parents=True, exist_ok=True)
+        model.save_pretrained(ckpt, state_dict=full_state)
 
-        logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt_dir}")
+        if not (ckpt / "tokenizer_config.json").exists():
+            self.tokenizer.save_pretrained(ckpt)
+            self.image_processor.save_pretrained(ckpt)
+
+        logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
         return control
 
 

@@ -27,8 +27,6 @@ GRAD_ACCUM=8
 SCHED="cosine_with_restarts"
 MAX_STEPS=2000
 EVAL_STEPS=100
-NUM_CYCLES=2
-DROP=0.2
 WDECAY=0.01
 SAVE_STEPS=${EVAL_STEPS}
 
@@ -63,12 +61,10 @@ ARGS="
  --save_steps ${SAVE_STEPS} \
  --save_total_limit 2 \
  --learning_rate ${LR} \
- --model_dropout ${DROP} \
  --weight_decay ${WDECAY} \
  --warmup_ratio 0.03 \
  --max_grad_norm 1 \
  --lr_scheduler_type ${SCHED} \
- --num_cycles ${NUM_CYCLES} \
  --logging_steps 10 \
  --model_max_length 8192 \
  --gradient_checkpointing True \

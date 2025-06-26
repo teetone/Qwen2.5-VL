@@ -19,20 +19,24 @@ DATASETS="robo_reward_bench%100"              # 100 % of the 400-example set
 ENTRY="qwenvl/train/train_qwen.py"
 
 ############################
-# Hyper-parameters
+# Hyperparameters
 ############################
-LR=1e-5                        # full-parameter / adapter FT; use 2e-4 if LoRA-only
+LR=5e-6
 PER_GPU_BATCH=4
-GRAD_ACCUM=4                   # → global batch = 16
-MAX_STEPS=1000
+GRAD_ACCUM=8
+SCHED="=cosine_with_restarts"
+MAX_STEPS=2000
 EVAL_STEPS=100
+NUM_CYCLES=2
+DROP=0.2
+WDECAY=0.01
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robo-ft"
-OUTPUT_DIR="./output_aggresive_6_25"
+OUTPUT_DIR="./output_aggresive_6_26"
 
 ############################
 # Argument string
@@ -59,10 +63,12 @@ ARGS="
  --save_steps ${SAVE_STEPS} \
  --save_total_limit 2 \
  --learning_rate ${LR} \
- --weight_decay 0 \
+ --model_dropout ${DROP} \
+ --weight_decay ${WDECAY} \
  --warmup_ratio 0.03 \
  --max_grad_norm 1 \
- --lr_scheduler_type cosine \
+ --lr_scheduler_type ${SCHED} \
+ --num_cycles ${NUM_CYCLES} \
  --logging_steps 10 \
  --model_max_length 8192 \
  --gradient_checkpointing True \

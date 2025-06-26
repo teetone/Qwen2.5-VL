@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=5e-6
 PER_GPU_BATCH=4
 GRAD_ACCUM=8
-SCHED="=cosine_with_restarts"
+SCHED="cosine_with_restarts"
 MAX_STEPS=2000
 EVAL_STEPS=100
 NUM_CYCLES=2

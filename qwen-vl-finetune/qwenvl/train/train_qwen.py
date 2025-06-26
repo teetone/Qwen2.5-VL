@@ -53,17 +53,19 @@ class HFSaverCallback(TrainerCallback):
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.root_dir = root_dir
-        self.trainer = None            # will be set right after Trainer is built
+        self.trainer = None
+
+    def on_init_end(self, args, state, control, **kwargs):
+        # kwargs always contains the Trainer instance
+        self.trainer = kwargs["trainer"]
+        return control
 
     def on_save(self, args, state, control, **kwargs):
-        # rank-0 only
         if args.local_rank not in (-1, 0):
             return control
+        assert self.trainer is not None, "HFSaverCallback: trainer not set"
 
-        assert self.trainer is not None, "trainer reference not set"
         model = self.trainer.model
-
-        # ZeRO-3: gather full weights
         full_state = self.trainer.accelerator.get_state_dict(model)
 
         ckpt = self.root_dir / f"step-{state.global_step}"

@@ -55,15 +55,9 @@ class HFSaverCallback(TrainerCallback):
         self.root_dir = root_dir
         self.trainer = None
 
-    def on_init_end(self, args, state, control, **kwargs):
-        # kwargs always contains the Trainer instance
-        self.trainer = kwargs["trainer"]
-        return control
-
     def on_save(self, args, state, control, **kwargs):
         if args.local_rank not in (-1, 0):
             return control
-        assert self.trainer is not None, "HFSaverCallback: trainer not set"
 
         model = self.trainer.model
         full_state = self.trainer.accelerator.get_state_dict(model)

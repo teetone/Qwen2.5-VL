@@ -21,20 +21,20 @@ ENTRY="qwenvl/train/train_qwen.py"
 ############################
 # Hyperparameters
 ############################
-LR=5e-6
+LR=4e-6
 PER_GPU_BATCH=4
-GRAD_ACCUM=8
+GRAD_ACCUM=16
 SCHED="cosine_with_restarts"
-MAX_STEPS=2000
+MAX_STEPS=3000
 EVAL_STEPS=100
-WDECAY=0.01
+WDECAY=0.02
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robo-ft"
-OUTPUT_DIR="./output_aggresive_6_26"
+OUTPUT_DIR="./output_more_data_6_27"
 
 ############################
 # Argument string
@@ -62,7 +62,7 @@ ARGS="
  --save_total_limit 2 \
  --learning_rate ${LR} \
  --weight_decay ${WDECAY} \
- --warmup_ratio 0.03 \
+ --warmup_ratio 0.05 \
  --max_grad_norm 1 \
  --lr_scheduler_type ${SCHED} \
  --logging_steps 10 \

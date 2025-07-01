@@ -23,18 +23,18 @@ ENTRY="qwenvl/train/train_qwen.py"
 ############################
 LR=4e-6
 PER_GPU_BATCH=4
-GRAD_ACCUM=32
+GRAD_ACCUM=16
 SCHED="cosine_with_restarts"
-MAX_STEPS=2000
+MAX_STEPS=3000
 EVAL_STEPS=100
-WDECAY=0.05
+WDECAY=0.02
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robo-ft"
-OUTPUT_DIR="./output_more_data_6_29"
+OUTPUT_DIR="./output_aggresive_6_26"
 
 ############################
 # Argument string

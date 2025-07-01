@@ -18,7 +18,7 @@ DATASETS="robo_reward_bench%100"       # use full 4 k set
 ENTRY="qwenvl/train/train_qwen.py"
 
 ############################
-# Hyper-parameters
+# Hyperparameters
 ############################
 LR=3e-6                   # slightly lower than 3B run
 PER_GPU_BATCH=2           # 7 B + video fits comfortably in 24 GB RAM
@@ -30,8 +30,12 @@ EVAL_STEPS=250            # evaluate/save ~12×
 WDECAY=0.02
 WARMUP=0.05
 LOG_STEPS=25
+
+############################
+# Output / tracking
+############################
 RUN_NAME="qwen2vl-7b-robo-ft"
-OUTPUT_DIR="./output_7b_6_29"
+OUTPUT_DIR="./output_7b_6_30"
 
 ############################
 # Argument string
@@ -65,7 +69,6 @@ ARGS="
  --warmup_ratio ${WARMUP} \
  --max_grad_norm 1 \
  --lr_scheduler_type ${SCHED} \
- --num_cycles ${NUM_CYCLES} \
  --logging_steps ${LOG_STEPS} \
  --model_max_length 8192 \
  --gradient_checkpointing True \

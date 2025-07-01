@@ -60,9 +60,6 @@ ARGS="
  --save_strategy steps \
  --save_steps ${EVAL_STEPS} \
  --save_total_limit 3 \
- --load_best_model_at_end True \
- --metric_for_best_model train_loss \
- --greater_is_better False \
  --learning_rate ${LR} \
  --weight_decay ${WDECAY} \
  --warmup_ratio ${WARMUP} \

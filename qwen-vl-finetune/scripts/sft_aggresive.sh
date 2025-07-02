@@ -34,7 +34,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robo-ft"
-OUTPUT_DIR="./output_aggresive_6_26"
+OUTPUT_DIR="./output_more_data_6_27"
 
 ############################
 # Argument string

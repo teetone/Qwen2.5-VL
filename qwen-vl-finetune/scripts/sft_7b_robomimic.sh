@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Fine-tune Qwen-2.5-VL-7B on Robomimic data (2k training steps)
+
+############################
+# Distributed / DeepSpeed
+############################
+NPROC_PER_NODE=1                       # 1 GPU
+MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
+MASTER_PORT=${MASTER_PORT:-$(shuf -i 20001-29999 -n 1)}
+NNODES=${WORLD_SIZE:-1}
+DEEPSPEED_CFG="./scripts/zero3.json"
+
+############################
+# Model & data paths
+############################
+MODEL_ID="Qwen/Qwen2.5-VL-7B-Instruct"
+DATASETS="robomimic%100"            # full Robomimic
+ENTRY="qwenvl/train/train_qwen.py"
+
+############################
+# Hyperparameters
+############################
+LR=3e-6
+PER_GPU_BATCH=2
+GRAD_ACCUM=32
+SCHED="cosine_with_restarts"
+MAX_STEPS=2000            # shortened run
+EVAL_STEPS=250
+WDECAY=0.02
+WARMUP=0.05
+LOG_STEPS=25
+
+############################
+# Output / tracking
+############################
+RUN_NAME="qwen2vl-7b-robomimic-ft"
+OUTPUT_DIR="./output_7b_robomimic"
+
+############################
+# Argument string
+############################
+ARGS="\
+ --deepspeed ${DEEPSPEED_CFG} \
+ --model_name_or_path ${MODEL_ID} \
+ --dataset_use ${DATASETS} \
+ --data_flatten True \
+ --tune_mm_vision False \
+ --tune_mm_mlp True \
+ --tune_mm_llm True \
+ --bf16 \
+ --output_dir ${OUTPUT_DIR} \
+ --max_steps ${MAX_STEPS} \
+ --per_device_train_batch_size ${PER_GPU_BATCH} \
+ --per_device_eval_batch_size $((PER_GPU_BATCH * 2)) \
+ --gradient_accumulation_steps ${GRAD_ACCUM} \
+ --max_pixels 50176 \
+ --min_pixels 784 \
+ --eval_steps ${EVAL_STEPS} \
+ --save_strategy steps \
+ --save_steps ${EVAL_STEPS} \
+ --save_total_limit 3 \
+ --learning_rate ${LR} \
+ --weight_decay ${WDECAY} \
+ --warmup_ratio ${WARMUP} \
+ --max_grad_norm 1 \
+ --lr_scheduler_type ${SCHED} \
+ --logging_steps ${LOG_STEPS} \
+ --model_max_length 8192 \
+ --gradient_checkpointing True \
+ --dataloader_num_workers 4 \
+ --run_name ${RUN_NAME} \
+ --report_to wandb"
+
+############################
+# Launch
+############################
+torchrun \
+  --nproc_per_node=${NPROC_PER_NODE} \
+  --master_addr=${MASTER_ADDR} \
+  --master_port=${MASTER_PORT} \
+  ${ENTRY} ${ARGS}

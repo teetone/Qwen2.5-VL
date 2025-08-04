@@ -32,7 +32,7 @@ ROBO_REWARD_BENCH = {
 }
 
 ROBOMIMIC = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/train.json",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/train_with_video.json",
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data",
 }
 

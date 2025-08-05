@@ -212,12 +212,24 @@ def train(attn_implementation="flash_attention_2"):
         if isinstance(labels, np.ndarray):
             labels = torch.tensor(labels)
 
-        pred_ids = logits.argmax(-1)  # (batch, seq)
+        pred_ids = logits.argmax(-1)  # could be (batch, seq) or (seq) or scalar
+
+        # ensure 2-D predictions
+        if pred_ids.dim() == 0:               # scalar => repeat for each label token
+            pred_ids = pred_ids.unsqueeze(0).repeat(labels.view(-1).size(0))
+        if pred_ids.dim() == 1 and labels.dim() == 2:
+            # split the flat vector according to each sample length
+            splits, start = [], 0
+            for row in labels:
+                ln = (row != IGNORE_INDEX).sum().item()
+                splits.append(pred_ids[start:start+ln])
+                start += ln
+            pred_ids = torch.nn.utils.rnn.pad_sequence(splits, batch_first=True, padding_value=tokenizer.pad_token_id)
+
         batch_size = labels.size(0)
         correct = 0
         samples_printed = 0
         for idx in range(batch_size):
-            # ground-truth tokens for this sample (skip IGNORE_INDEX)
             gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
             if gt_tokens.numel() == 0:
                 continue

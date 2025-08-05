@@ -17,6 +17,7 @@
 from datetime import datetime
 import os
 import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 import pathlib
 import torch
 import transformers

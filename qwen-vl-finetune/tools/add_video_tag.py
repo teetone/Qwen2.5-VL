@@ -2,9 +2,9 @@
 """Add missing <video> tag to the first human prompt of every example.
 
 Usage (from project root):
-    python qwen-vl-finetune/tools/add_video_tag.py \
-        --src /nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/train.json \
-        --dst /nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/train_with_video.json
+    python tools/add_video_tag.py \
+        --src /nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/eval.json \
+        --dst /nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/eval_with_video.json
 
 The script keeps the source file intact and writes a new JSON file with the
 string "\nCamera:\n<video>" appended to the first (human) conversation turn

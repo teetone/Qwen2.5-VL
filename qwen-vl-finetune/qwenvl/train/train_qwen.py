@@ -227,6 +227,7 @@ def train(attn_implementation="flash_attention_2"):
                 start += ln
             pred_ids = torch.nn.utils.rnn.pad_sequence(splits, batch_first=True, padding_value=tokenizer.pad_token_id)
 
+        import re
         batch_size = labels.size(0)
         correct = 0
         samples_printed = 0
@@ -234,22 +235,32 @@ def train(attn_implementation="flash_attention_2"):
             gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
             if gt_tokens.numel() == 0:
                 continue
+            pred_row = pred_ids[idx]
+            # ensure same length slice if pred shorter
             seq_len = gt_tokens.size(0)
-            pred_tokens = pred_ids[idx][:seq_len]
-            gt_text = tokenizer.decode(gt_tokens, skip_special_tokens=True)
+            if pred_row.size(0) < seq_len:
+                seq_len = pred_row.size(0)
+            pred_tokens = pred_row[:seq_len]
+
+            gt_text = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=True)
             pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=True)
+
+            # extract last ANSWER: x
+            def extract(ans):
+                m = re.findall(r"ANSWER:\s*([01])", ans.upper())
+                return m[-1] if m else ""  # empty if not found
 
             if samples_printed < 10:
                 question = "<unknown>"
                 if eval_examples is not None and idx < len(eval_examples):
                     q_ids = eval_examples[idx]["input_ids"][0].tolist()
                     question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
-                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {gt_text}\nPredicted: {pred_text}\n")
+                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {extract(gt_text)}\nPredicted: {extract(pred_text)}\n")
                 samples_printed += 1
 
-            if _normalize(gt_text) == _normalize(pred_text):
+            if extract(gt_text) == extract(pred_text):
                 correct += 1
-        return {"exact_match": correct / batch_size}
+        return {"exact_match": correct / max(1, batch_size)}
 
 
     class ArgmaxTrainer(Trainer):

@@ -224,8 +224,13 @@ def train(attn_implementation="flash_attention_2"):
         return {"exact_match": correct / len(decoded_preds)}
 
     # Transformers <4.37 do not add generation_config to TrainingArguments
+    # ensure older Transformers have generation attributes expected by Seq2SeqTrainer
     if not hasattr(training_args, "generation_config"):
         training_args.generation_config = None
+    if not hasattr(training_args, "generation_max_length"):
+        training_args.generation_max_length = 8  # for ANSWER: 0/1
+    if not hasattr(training_args, "generation_num_beams"):
+        training_args.generation_num_beams = 1
 
     trainer = Seq2SeqTrainer(
         model=model,

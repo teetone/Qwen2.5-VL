@@ -199,11 +199,11 @@ def train(attn_implementation="flash_attention_2"):
     hf_ckpt_root.mkdir(parents=True, exist_ok=True)
     hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
 
-        # ---------------- Metric: exact match on ANSWER: 0/1 ----------------
+    # ---------------- Metric: exact match on ANSWER: 0/1 ----------------
     def _normalize(txt: str) -> str:
         return txt.strip().replace("\n", " ").upper()
 
-        eval_examples = data_module.get('eval_dataset', None)
+    eval_examples = data_module.get('eval_dataset', None)
 
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
@@ -228,10 +228,11 @@ def train(attn_implementation="flash_attention_2"):
         tokenizer=tokenizer,
         args=training_args,
         compute_metrics=compute_metrics,
-        generation_max_length=8,
         # callbacks=[hf_saver_cb],
         **data_module
     )
+    trainer.predict_with_generate = True
+    trainer.generation_max_length = 8
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")

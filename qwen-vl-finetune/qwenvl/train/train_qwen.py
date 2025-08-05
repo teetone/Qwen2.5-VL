@@ -216,7 +216,15 @@ def train(attn_implementation="flash_attention_2"):
             labels = torch.tensor(labels, device=model.device)
         # If dim mismatch from padding concat, reshape to labels
         if pred_ids.dim() == 1 and labels.dim() == 2:
-            pred_ids = pred_ids.view_as(labels)
+            # pred_ids is flattened; reconstruct per-sample tokens
+            new_preds = []
+            ptr = 0
+            for row in labels:
+                ln = (row != IGNORE_INDEX).sum().item()
+                new_preds.append(pred_ids[ptr: ptr + ln])
+                ptr += ln
+            pred_ids = torch.nn.utils.rnn.pad_sequence(new_preds, batch_first=True, padding_value=tokenizer.pad_token_id)
+            labels = torch.nn.utils.rnn.pad_sequence([row[row!=IGNORE_INDEX] for row in labels], batch_first=True, padding_value=tokenizer.pad_token_id)
         correct = 0
         show_samples = 10
         samples_printed = 0

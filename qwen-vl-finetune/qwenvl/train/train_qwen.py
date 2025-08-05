@@ -46,7 +46,7 @@ from qwenvl.train.argument import (
     DataArguments,
     TrainingArguments,
 )
-from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Seq2SeqTrainer
+from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Trainer
 
 local_rank = None
 
@@ -206,46 +206,33 @@ def train(attn_implementation="flash_attention_2"):
     eval_examples = data_module.get('eval_dataset', None)
 
     def compute_metrics(eval_preds):
-        preds, labels = eval_preds
-        labels = labels.copy()
-        labels[labels == IGNORE_INDEX] = tokenizer.pad_token_id
-        decoded_preds  = tokenizer.batch_decode(preds,  skip_special_tokens=True)
-        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+        logits, labels = eval_preds
+        # logits: (batch, seq_len, vocab)
+        pred_ids = logits.argmax(-1)
         correct = 0
-        for i, (p, g) in enumerate(zip(decoded_preds, decoded_labels)):
-            if i < 10:  # print first 10 examples
+        show_samples = 10
+        samples_printed = 0
+        batch_size = labels.shape[0]
+        for idx in range(batch_size):
+            label_row = labels[idx]
+            mask = label_row != IGNORE_INDEX
+            gt_tokens = label_row[mask]
+            pred_tokens = pred_ids[idx][mask]
+            gt_text = tokenizer.decode(gt_tokens, skip_special_tokens=True)
+            pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=True)
+            if samples_printed < show_samples:
                 question = "<unknown>"
-                if eval_examples is not None and i < len(eval_examples):
-                    q_ids = eval_examples[i]['input_ids'][0].tolist()
+                if eval_examples is not None and idx < len(eval_examples):
+                    q_ids = eval_examples[idx]["input_ids"][0].tolist()
                     question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
-                logging.info(f"[Eval sample {i}]\nQ: {question}\nExpected: {g}\nPredicted: {p}\n")
-            if _normalize(p) == _normalize(g):
+                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {gt_text}\nPredicted: {pred_text}\n")
+                samples_printed += 1
+            if _normalize(gt_text) == _normalize(pred_text):
                 correct += 1
-        return {"exact_match": correct / len(decoded_preds)}
+        return {"exact_match": correct / batch_size}
 
-    # Transformers <4.37 do not add generation_config to TrainingArguments
-    # ensure older Transformers have generation attributes expected by Seq2SeqTrainer
-    if not hasattr(training_args, "generation_config"):
-        training_args.generation_config = None
-    if not hasattr(training_args, "generation_num_beams"):
-        training_args.generation_num_beams = 1
-    # ensure attribute exists for older HF even if None
-    if not hasattr(training_args, "generation_max_length"):
-        training_args.generation_max_length = None
-    # limit only new tokens to 8; keeps input length free
-    if not hasattr(training_args, "generation_max_new_tokens"):
-        training_args.generation_max_new_tokens = 8
-    # older versions need this flag for Seq2Seq evaluate path
-    if not hasattr(training_args, "predict_with_generate"):
-        training_args.predict_with_generate = True
-    # ensure max_length, if present, is not smaller than input length
-    gml = getattr(training_args, "generation_max_length", None)
-    if gml is None:
-        training_args.generation_max_length = training_args.model_max_length
-    else:
-        training_args.generation_max_length = max(gml, training_args.model_max_length)
 
-    trainer = Seq2SeqTrainer(
+    trainer = Trainer(
         model=model,
         processing_class=tokenizer,
         args=training_args,
@@ -253,8 +240,6 @@ def train(attn_implementation="flash_attention_2"):
         # callbacks=[hf_saver_cb],
         **data_module
     )
-    trainer.predict_with_generate = True
-    trainer.generation_max_length = 8
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")

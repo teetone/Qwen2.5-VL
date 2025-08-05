@@ -206,43 +206,34 @@ def train(attn_implementation="flash_attention_2"):
     eval_examples = data_module.get('eval_dataset', None)
 
     def compute_metrics(eval_preds):
-        logits, labels = eval_preds
-        # logits: (batch, seq_len, vocab)
-        pred_ids = logits.argmax(-1)
-        # ensure tensors for dim/shape handling
-        if isinstance(pred_ids, np.ndarray):
-            pred_ids = torch.tensor(pred_ids, device=model.device)
+        logits, labels = eval_preds  # logits: (batch, seq, vocab)
+        if isinstance(logits, np.ndarray):
+            logits = torch.tensor(logits)
         if isinstance(labels, np.ndarray):
-            labels = torch.tensor(labels, device=model.device)
-        # If dim mismatch from padding concat, reshape to labels
-        if pred_ids.dim() == 1 and labels.dim() == 2:
-            # pred_ids is flattened; reconstruct per-sample tokens
-            new_preds = []
-            ptr = 0
-            for row in labels:
-                ln = (row != IGNORE_INDEX).sum().item()
-                new_preds.append(pred_ids[ptr: ptr + ln])
-                ptr += ln
-            pred_ids = torch.nn.utils.rnn.pad_sequence(new_preds, batch_first=True, padding_value=tokenizer.pad_token_id)
-            labels = torch.nn.utils.rnn.pad_sequence([row[row!=IGNORE_INDEX] for row in labels], batch_first=True, padding_value=tokenizer.pad_token_id)
+            labels = torch.tensor(labels)
+
+        pred_ids = logits.argmax(-1)  # (batch, seq)
+        batch_size = labels.size(0)
         correct = 0
-        show_samples = 10
         samples_printed = 0
-        batch_size = labels.shape[0]
         for idx in range(batch_size):
-            label_row = labels[idx]
-            mask = label_row != IGNORE_INDEX
-            gt_tokens = label_row[mask]
-            pred_tokens = pred_ids[idx][mask]
+            # ground-truth tokens for this sample (skip IGNORE_INDEX)
+            gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
+            if gt_tokens.numel() == 0:
+                continue
+            seq_len = gt_tokens.size(0)
+            pred_tokens = pred_ids[idx][:seq_len]
             gt_text = tokenizer.decode(gt_tokens, skip_special_tokens=True)
             pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=True)
-            if samples_printed < show_samples:
+
+            if samples_printed < 10:
                 question = "<unknown>"
                 if eval_examples is not None and idx < len(eval_examples):
                     q_ids = eval_examples[idx]["input_ids"][0].tolist()
                     question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
                 logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {gt_text}\nPredicted: {pred_text}\n")
                 samples_printed += 1
+
             if _normalize(gt_text) == _normalize(pred_text):
                 correct += 1
         return {"exact_match": correct / batch_size}

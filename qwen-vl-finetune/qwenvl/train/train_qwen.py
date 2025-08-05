@@ -209,6 +209,11 @@ def train(attn_implementation="flash_attention_2"):
         logits, labels = eval_preds
         # logits: (batch, seq_len, vocab)
         pred_ids = logits.argmax(-1)
+        # ensure tensors for dim/shape handling
+        if isinstance(pred_ids, np.ndarray):
+            pred_ids = torch.tensor(pred_ids, device=model.device)
+        if isinstance(labels, np.ndarray):
+            labels = torch.tensor(labels, device=model.device)
         # If dim mismatch from padding concat, reshape to labels
         if pred_ids.dim() == 1 and labels.dim() == 2:
             pred_ids = pred_ids.view_as(labels)

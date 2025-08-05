@@ -227,9 +227,8 @@ def train(attn_implementation="flash_attention_2"):
         model=model,
         tokenizer=tokenizer,
         args=training_args,
-        predict_with_generate=True,
-        generation_max_length=8,
         compute_metrics=compute_metrics,
+        generation_max_length=8,
         # callbacks=[hf_saver_cb],
         **data_module
     )

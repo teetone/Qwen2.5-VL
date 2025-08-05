@@ -645,8 +645,13 @@ class JSONEvalDataset(LazySupervisedDataset):
         super().__init__(tokenizer, data_args)
         if not data_args.eval_file:
             raise ValueError("eval_file must be provided in data_args to create JSONEvalDataset")
+    
         with open(data_args.eval_file, "r", encoding="utf-8") as f:
             self.list_data_dict = json.load(f)
+        # Inject data_path so _get_item can locate the video file
+        base_dir = os.path.dirname(data_args.eval_file)
+        for ann in self.list_data_dict:
+            ann["data_path"] = base_dir
         # Do not shuffle in evaluation
 
 

@@ -223,9 +223,13 @@ def train(attn_implementation="flash_attention_2"):
                 correct += 1
         return {"exact_match": correct / len(decoded_preds)}
 
+    # Transformers <4.37 do not add generation_config to TrainingArguments
+    if not hasattr(training_args, "generation_config"):
+        training_args.generation_config = None
+
     trainer = Seq2SeqTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         args=training_args,
         compute_metrics=compute_metrics,
         # callbacks=[hf_saver_cb],

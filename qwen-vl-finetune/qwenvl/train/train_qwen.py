@@ -203,14 +203,24 @@ def train(attn_implementation="flash_attention_2"):
     def _normalize(txt: str) -> str:
         return txt.strip().replace("\n", " ").upper()
 
+        eval_examples = data_module.get('eval_dataset', None)
+
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
-        # replace IGNORE_INDEX in labels so they can be decoded
         labels = labels.copy()
         labels[labels == IGNORE_INDEX] = tokenizer.pad_token_id
         decoded_preds  = tokenizer.batch_decode(preds,  skip_special_tokens=True)
         decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-        correct = sum(_normalize(p) == _normalize(g) for p, g in zip(decoded_preds, decoded_labels))
+        correct = 0
+        for i, (p, g) in enumerate(zip(decoded_preds, decoded_labels)):
+            if i < 10:  # print first 10 examples
+                question = "<unknown>"
+                if eval_examples is not None and i < len(eval_examples):
+                    q_ids = eval_examples[i]['input_ids'][0].tolist()
+                    question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
+                logging.info(f"[Eval sample {i}]\nQ: {question}\nExpected: {g}\nPredicted: {p}\n")
+            if _normalize(p) == _normalize(g):
+                correct += 1
         return {"exact_match": correct / len(decoded_preds)}
 
     trainer = Seq2SeqTrainer(

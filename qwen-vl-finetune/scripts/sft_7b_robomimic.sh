@@ -26,6 +26,7 @@ GRAD_ACCUM=32
 SCHED="cosine_with_restarts"
 MAX_STEPS=2000            # shortened run
 EVAL_STEPS=250
+EVAL_FILE="/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data/eval_with_video.json"
 WDECAY=0.02
 WARMUP=0.05
 LOG_STEPS=25
@@ -55,7 +56,9 @@ ARGS="\
  --gradient_accumulation_steps ${GRAD_ACCUM} \
  --max_pixels 50176 \
  --min_pixels 784 \
+ --evaluation_strategy steps \
  --eval_steps ${EVAL_STEPS} \
+ --eval_file ${EVAL_FILE} \
  --save_strategy steps \
  --save_steps ${EVAL_STEPS} \
  --save_total_limit 3 \

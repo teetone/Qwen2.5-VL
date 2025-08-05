@@ -21,6 +21,8 @@ class DataArguments:
     max_pixels: int = field(default=28 * 28 * 576)
     min_pixels: int = field(default=28 * 28 * 16)
     video_max_frame_pixels: int = field(default=32 * 28 * 28)
+    # Optional held-out JSON file for evaluation
+    eval_file: Optional[str] = field(default=None)
     video_min_frame_pixels: int = field(default=4 * 28 * 28)
 
 

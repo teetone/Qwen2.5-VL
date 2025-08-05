@@ -609,14 +609,27 @@ class PackedDataCollatorForSupervisedDataset(object):
         return batch
 
 
+class JSONEvalDataset(LazySupervisedDataset):
+    """Dataset that loads examples from a single json file path for evaluation (packed)."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_args):
+        super().__init__(tokenizer, data_args)
+        if not data_args.eval_file:
+            raise ValueError("eval_file must be provided")
+        with open(data_args.eval_file, "r", encoding="utf-8") as f:
+            self.list_data_dict = json.load(f)
+
+
 def make_supervised_data_module_packed(
     tokenizer: transformers.PreTrainedTokenizer, data_args
 ) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
     train_dataset = LazySupervisedDataset(tokenizer=tokenizer, data_args=data_args)
+    eval_dataset = None
+    if getattr(data_args, "eval_file", None):
+        eval_dataset = JSONEvalDataset(tokenizer=tokenizer, data_args=data_args)
     data_collator = PackedDataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(
-        train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator
+        train_dataset=train_dataset, eval_dataset=eval_dataset, data_collator=data_collator
     )
 
 

@@ -638,19 +638,38 @@ class FlattenedDataCollatorForSupervisedDataset(DataCollatorForSupervisedDataset
         return batch
 
 
+class JSONEvalDataset(LazySupervisedDataset):
+    """Dataset that loads examples from a single json file path for evaluation."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_args):
+        # Use parent init to get all helper methods / processor config
+        super().__init__(tokenizer, data_args)
+        if not data_args.eval_file:
+            raise ValueError("eval_file must be provided in data_args to create JSONEvalDataset")
+        with open(data_args.eval_file, "r", encoding="utf-8") as f:
+            self.list_data_dict = json.load(f)
+        # Do not shuffle in evaluation
+
+
 def make_supervised_data_module(
     tokenizer: transformers.PreTrainedTokenizer, data_args
 ) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
     train_dataset = LazySupervisedDataset(tokenizer=tokenizer, data_args=data_args)
+
+    # Optional evaluation set
+    eval_dataset = None
+    if getattr(data_args, "eval_file", None):
+        eval_dataset = JSONEvalDataset(tokenizer=tokenizer, data_args=data_args)
+
     if data_args.data_flatten:
         data_collator = FlattenedDataCollatorForSupervisedDataset(tokenizer=tokenizer)
-        return dict(
-            train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator
-        )
-    data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
+    else:
+        data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
+
     return dict(
-        train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        data_collator=data_collator,
     )
 
 

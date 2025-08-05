@@ -239,8 +239,11 @@ def train(attn_implementation="flash_attention_2"):
     if not hasattr(training_args, "predict_with_generate"):
         training_args.predict_with_generate = True
     # ensure max_length, if present, is not smaller than input length
-    if hasattr(training_args, "generation_max_length"):
-        training_args.generation_max_length = max(getattr(training_args, "generation_max_length"), training_args.model_max_length)
+    gml = getattr(training_args, "generation_max_length", None)
+    if gml is None:
+        training_args.generation_max_length = training_args.model_max_length
+    else:
+        training_args.generation_max_length = max(gml, training_args.model_max_length)
 
     trainer = Seq2SeqTrainer(
         model=model,

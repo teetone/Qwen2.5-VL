@@ -209,6 +209,9 @@ def train(attn_implementation="flash_attention_2"):
         logits, labels = eval_preds
         # logits: (batch, seq_len, vocab)
         pred_ids = logits.argmax(-1)
+        # If dim mismatch from padding concat, reshape to labels
+        if pred_ids.dim() == 1 and labels.dim() == 2:
+            pred_ids = pred_ids.view_as(labels)
         correct = 0
         show_samples = 10
         samples_printed = 0

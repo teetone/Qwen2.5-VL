@@ -232,7 +232,19 @@ def train(attn_implementation="flash_attention_2"):
         return {"exact_match": correct / batch_size}
 
 
-    trainer = Trainer(
+    class ArgmaxTrainer(Trainer):
+        def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+            with torch.no_grad():
+                loss, logits, labels = super().prediction_step(model, inputs, False, ignore_keys)
+            # Convert logits to predicted token IDs (same shape as labels)
+            preds = logits.argmax(-1)
+            return (loss, preds, labels)
+
+    # ensure evaluation does not accumulate huge GPU tensors
+    if training_args.eval_accumulation_steps is None:
+        training_args.eval_accumulation_steps = 1
+
+    trainer = ArgmaxTrainer(
         model=model,
         processing_class=tokenizer,
         args=training_args,

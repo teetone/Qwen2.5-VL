@@ -231,6 +231,9 @@ def train(attn_implementation="flash_attention_2"):
         training_args.generation_max_length = 8  # for ANSWER: 0/1
     if not hasattr(training_args, "generation_num_beams"):
         training_args.generation_num_beams = 1
+    # older versions also need this flag for Seq2Seq evaluate path
+    if not hasattr(training_args, "predict_with_generate"):
+        training_args.predict_with_generate = True
 
     trainer = Seq2SeqTrainer(
         model=model,

@@ -243,20 +243,20 @@ def train(attn_implementation="flash_attention_2"):
                 seq_len = pred_row.size(0)
             pred_tokens = pred_row[:seq_len]
 
-            gt_text = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=True)
-            pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=True)
+            gt_text = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=False)
+            pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=False)
 
-            # extract last ANSWER: x
+            # extract FIRST ANSWER: x occurrence
             def extract(ans):
                 m = re.findall(r"ANSWER:\s*([01])", ans.upper())
-                return m[-1] if m else ""  # empty if not found
+                return m[0] if m else ""  # empty if not found
 
             if samples_printed < 10:
                 question = "<unknown>"
                 if eval_examples is not None and idx < len(eval_examples):
                     q_ids = eval_examples[idx]["input_ids"][0].tolist()
                     question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
-                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {extract(gt_text)}\nPredicted: {extract(pred_text)}\n")
+                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {extract(gt_text)}\nPredicted: {extract(pred_text)}\nRawPred: {pred_text[:60]}\n")
                 samples_printed += 1
 
             if extract(gt_text) == extract(pred_text):

@@ -229,6 +229,9 @@ def train(attn_implementation="flash_attention_2"):
         training_args.generation_config = None
     if not hasattr(training_args, "generation_num_beams"):
         training_args.generation_num_beams = 1
+    # ensure attribute exists for older HF even if None
+    if not hasattr(training_args, "generation_max_length"):
+        training_args.generation_max_length = None
     # limit only new tokens to 8; keeps input length free
     if not hasattr(training_args, "generation_max_new_tokens"):
         training_args.generation_max_new_tokens = 8

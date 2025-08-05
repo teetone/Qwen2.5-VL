@@ -23,8 +23,10 @@ import transformers
 import json
 from typing import Dict
 import shutil
+import numpy as np
 import sys
 from pathlib import Path
+from qwenvl.data.data_qwen import IGNORE_INDEX
 
 project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
@@ -44,7 +46,7 @@ from qwenvl.train.argument import (
     DataArguments,
     TrainingArguments,
 )
-from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Trainer
+from transformers import AutoTokenizer, AutoProcessor, Qwen2VLImageProcessor, Seq2SeqTrainer
 
 local_rank = None
 
@@ -197,11 +199,27 @@ def train(attn_implementation="flash_attention_2"):
     hf_ckpt_root.mkdir(parents=True, exist_ok=True)
     hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
 
-    trainer = Trainer(
+        # ---------------- Metric: exact match on ANSWER: 0/1 ----------------
+    def _normalize(txt: str) -> str:
+        return txt.strip().replace("\n", " ").upper()
+
+    def compute_metrics(eval_preds):
+        preds, labels = eval_preds
+        # replace IGNORE_INDEX in labels so they can be decoded
+        labels = labels.copy()
+        labels[labels == IGNORE_INDEX] = tokenizer.pad_token_id
+        decoded_preds  = tokenizer.batch_decode(preds,  skip_special_tokens=True)
+        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+        correct = sum(_normalize(p) == _normalize(g) for p, g in zip(decoded_preds, decoded_labels))
+        return {"exact_match": correct / len(decoded_preds)}
+
+    trainer = Seq2SeqTrainer(
         model=model,
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         args=training_args,
-        # TODO: this is broken
+        predict_with_generate=True,
+        generation_max_length=8,
+        compute_metrics=compute_metrics,
         # callbacks=[hf_saver_cb],
         **data_module
     )

@@ -227,13 +227,17 @@ def train(attn_implementation="flash_attention_2"):
     # ensure older Transformers have generation attributes expected by Seq2SeqTrainer
     if not hasattr(training_args, "generation_config"):
         training_args.generation_config = None
-    if not hasattr(training_args, "generation_max_length"):
-        training_args.generation_max_length = 8  # for ANSWER: 0/1
     if not hasattr(training_args, "generation_num_beams"):
         training_args.generation_num_beams = 1
-    # older versions also need this flag for Seq2Seq evaluate path
+    # limit only new tokens to 8; keeps input length free
+    if not hasattr(training_args, "generation_max_new_tokens"):
+        training_args.generation_max_new_tokens = 8
+    # older versions need this flag for Seq2Seq evaluate path
     if not hasattr(training_args, "predict_with_generate"):
         training_args.predict_with_generate = True
+    # ensure max_length, if present, is not smaller than input length
+    if hasattr(training_args, "generation_max_length"):
+        training_args.generation_max_length = max(getattr(training_args, "generation_max_length"), training_args.model_max_length)
 
     trainer = Seq2SeqTrainer(
         model=model,

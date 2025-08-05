@@ -230,6 +230,7 @@ def train(attn_implementation="flash_attention_2"):
         import re
         batch_size = labels.size(0)
         correct = 0
+        evaluated = 0
         samples_printed = 0
         for idx in range(batch_size):
             gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
@@ -260,7 +261,11 @@ def train(attn_implementation="flash_attention_2"):
 
             if extract(gt_text) == extract(pred_text):
                 correct += 1
-        return {"exact_match": correct / max(1, batch_size)}
+            evaluated += 1
+
+        acc = correct / max(1, evaluated)
+        logging.info(f"[Eval] exact_match {correct}/{evaluated} = {acc:.4f}")
+        return {"exact_match": acc}
 
 
     class ArgmaxTrainer(Trainer):

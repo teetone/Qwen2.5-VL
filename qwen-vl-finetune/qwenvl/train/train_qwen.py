@@ -298,9 +298,12 @@ def train(attn_implementation="flash_attention_2"):
                     cfg.attn_implementation = "eager"
                     self._eval_model = model.__class__(cfg).cpu().eval()
                     # copy weights to CPU tensor to avoid ZeRO-3 hooks
-                    if hasattr(self, 'accelerator') and self.accelerator is not None:
-                        full_state = self.accelerator.get_state_dict(model)
-                    else:
+                    try:
+                        if hasattr(self, 'accelerator') and self.accelerator is not None:
+                            full_state = self.accelerator.get_state_dict(model)
+                        else:
+                            raise AttributeError
+                    except AttributeError:
                         full_state = {k: p.detach().cpu() for k, p in model.named_parameters()}
                     state_cpu = {k: v.clone() for k, v in full_state.items()}
                     _ = self._eval_model.load_state_dict(state_cpu, strict=False)

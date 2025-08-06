@@ -293,28 +293,25 @@ def train(attn_implementation="flash_attention_2"):
                 # Build or reuse a CPU eager-attention copy for safe generation
                 # ------------------------------------------------------------------
                 if self._eval_model is None:
-                    # Build an eager-attention clone and load current weights
-                    cfg = model.config.to_dict()
-                    cfg["attn_implementation"] = "eager"
-                    from transformers import AutoConfig
-                    new_config = AutoConfig.from_dict(cfg)
-                    self._eval_model = model.__class__(new_config).cpu()
-                    # copy weights (convert deepspeed params to plain tensors)
-                    state = {k: (p.data.detach().cpu().clone() if isinstance(p, torch.Tensor) else p) for k, p in model.named_parameters()}
-                    self._eval_model.load_state_dict(state, strict=False)
-                    self._eval_model.eval()
+                    # 1. Build an eager-attention clone directly from the same class
+                    self._eval_model = model.__class__.from_pretrained(
+                        None,                                          # no checkpoint
+                        config=model.config,                           # reuse in-memory cfg
+                        state_dict=model.state_dict(),                 # copy weights
+                        attn_implementation="eager",                   # disable flash-attn
+                        torch_dtype=torch.float16,                     # keep it light
+                        device_map={"": "cpu"},                        # CPU clone
+                    ).eval()
 
-                gen_kwargs = dict(
-                    max_new_tokens=getattr(self.args, "generation_max_new_tokens", 8),
-                    num_beams=1,
-                )
+                # -------- generation ----------
                 gen_inputs = {
                     k: (v.cpu() if isinstance(v, torch.Tensor) else v)
                     for k, v in inputs.items()
                     if k != "attention_mask" and v is not None
                 }
-
-                generated_ids = self._eval_model.generate(**gen_inputs, **gen_kwargs)
+                generated_ids = self._eval_model.generate(**gen_inputs,
+                                                        max_new_tokens=8,
+                                                        num_beams=1)
 
                 prompt_len = gen_inputs["input_ids"].shape[1]
                 trimmed = [seq[prompt_len:] for seq in generated_ids]

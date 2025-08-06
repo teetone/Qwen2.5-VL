@@ -302,7 +302,11 @@ def train(attn_implementation="flash_attention_2"):
                     max_new_tokens=getattr(self.args, "generation_max_new_tokens", 8),
                     num_beams=1,
                 )
-                gen_inputs = {k: v.cpu() for k, v in inputs.items() if k != "attention_mask"}
+                gen_inputs = {
+                    k: (v.cpu() if isinstance(v, torch.Tensor) else v)
+                    for k, v in inputs.items()
+                    if k != "attention_mask" and v is not None
+                }
 
                 generated_ids = self._eval_model.generate(**gen_inputs, **gen_kwargs)
 

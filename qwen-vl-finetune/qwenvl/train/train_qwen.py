@@ -293,15 +293,13 @@ def train(attn_implementation="flash_attention_2"):
                 # Build or reuse a CPU eager-attention copy for safe generation
                 # ------------------------------------------------------------------
                 if self._eval_model is None:
-                    # 1. Build an eager-attention clone directly from the same class
-                    self._eval_model = model.__class__.from_pretrained(
-                        None,                                          # no checkpoint
-                        config=model.config,                           # reuse in-memory cfg
-                        state_dict=model.state_dict(),                 # copy weights
-                        attn_implementation="eager",                   # disable flash-attn
-                        torch_dtype=torch.float16,                     # keep it light
-                        device_map={"": "cpu"},                        # CPU clone
-                    ).eval()
+                    # Build an eager-attention clone (no Deepspeed, no device_map)
+                    cfg = model.config
+                    cfg.attn_implementation = "eager"
+                    self._eval_model = model.__class__(cfg).cpu().eval()
+                    # copy weights to CPU tensor to avoid ZeRO-3 hooks
+                    state_cpu = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+                    _ = self._eval_model.load_state_dict(state_cpu, strict=False)
 
                 # -------- generation ----------
                 gen_inputs = {

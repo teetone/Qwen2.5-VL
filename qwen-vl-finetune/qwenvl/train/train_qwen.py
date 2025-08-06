@@ -289,13 +289,17 @@ def train(attn_implementation="flash_attention_2"):
 
             with torch.no_grad():
                 # Compute loss via standard forward to keep it consistent
-                loss, _, labels = super().prediction_step(model, inputs, False, ignore_keys)
+                loss, _, labels = super().prediction_step(model, inputs, True, ignore_keys)
 
                 gen_kwargs = dict(
                     max_new_tokens=getattr(self.args, "generation_max_new_tokens", 8),
                     num_beams=1,
                 )
-                # model.generate needs the same keys that the forward pass gets.
+
+                # Ensure attention_mask is 2-D for generation
+                inputs = dict(inputs)  # shallow copy
+                inputs["attention_mask"] = inputs["input_ids"].ne(self.tokenizer.pad_token_id)
+
                 generated_ids = model.generate(**inputs, **gen_kwargs)
 
                 # Trim the prompt prefix so we keep only new tokens

@@ -297,10 +297,8 @@ def train(attn_implementation="flash_attention_2"):
                 )
 
                 # Ensure attention_mask is 2-D for generation
-                inputs = dict(inputs)  # shallow copy
-                inputs["attention_mask"] = inputs["input_ids"].ne(self.tokenizer.pad_token_id)
-
-                generated_ids = model.generate(**inputs, **gen_kwargs)
+                gen_inputs = {k: v for k, v in inputs.items() if k != "attention_mask"}
+                generated_ids = model.generate(**gen_inputs, **gen_kwargs)
 
                 # Trim the prompt prefix so we keep only new tokens
                 input_len = inputs["input_ids"].shape[1]

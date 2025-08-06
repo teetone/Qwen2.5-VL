@@ -205,6 +205,9 @@ def train(attn_implementation="flash_attention_2"):
         **data_module
     )
 
+    # Link the trainer back to the callback so it can access accelerator/state_dict
+    hf_saver_cb.trainer = trainer
+
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")
         trainer.train(resume_from_checkpoint=True)

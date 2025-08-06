@@ -36,6 +36,10 @@ ROBOMIMIC = {
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data",
 }
 
+ROBOMIMIC_CAN = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_can/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_can",
+}
 
 data_dict = {
     "cambrian_737k": CAMBRIAN_737K,
@@ -45,6 +49,7 @@ data_dict = {
     "videochatgpt": VIDEOCHATGPT,
     "robo_reward_bench": ROBO_REWARD_BENCH,
     "robomimic": ROBOMIMIC,
+    "robomimic_can": ROBOMIMIC_CAN,
 }
 
 

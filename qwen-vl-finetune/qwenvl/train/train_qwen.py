@@ -293,9 +293,15 @@ def train(attn_implementation="flash_attention_2"):
                 # Build or reuse a CPU eager-attention copy for safe generation
                 # ------------------------------------------------------------------
                 if self._eval_model is None:
-                    from copy import deepcopy
-                    self._eval_model = deepcopy(model).cpu()
-                    self._eval_model.config.attn_implementation = "eager"
+                    # Build an eager-attention clone and load current weights
+                    cfg = model.config.to_dict()
+                    cfg["attn_implementation"] = "eager"
+                    from transformers import AutoConfig
+                    new_config = AutoConfig.from_dict(cfg)
+                    self._eval_model = model.__class__(new_config).cpu()
+                    # copy weights (convert deepspeed params to plain tensors)
+                    state = {k: (p.data.detach().cpu().clone() if isinstance(p, torch.Tensor) else p) for k, p in model.named_parameters()}
+                    self._eval_model.load_state_dict(state, strict=False)
                     self._eval_model.eval()
 
                 gen_kwargs = dict(

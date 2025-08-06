@@ -24,6 +24,7 @@ import transformers
 import json
 from typing import Dict
 import shutil
+import re
 import numpy as np
 import sys
 from pathlib import Path
@@ -227,45 +228,54 @@ def train(attn_implementation="flash_attention_2"):
                 start += ln
             pred_ids = torch.nn.utils.rnn.pad_sequence(splits, batch_first=True, padding_value=tokenizer.pad_token_id)
 
-        import re
         batch_size = labels.size(0)
-        correct = 0
-        evaluated = 0
+        correct = {"binary":0, "progress":0, "discrete":0}
+        total   = {"binary":0, "progress":0, "discrete":0}
         samples_printed = 0
+
+        def extract(ans:str, ltype:str):
+            ans_up = ans.upper()
+            if ltype=="binary":
+                m=re.findall(r"ANSWER:\s*([01])", ans_up)
+            elif ltype=="discrete":
+                m=re.findall(r"ANSWER:\s*([1-5])", ans_up)
+            else: # progress
+                m=re.findall(r"ANSWER:\s*([0-9]{1,3}(?:\.[0-9]+)?)", ans_up)
+            return m[0] if m else ""
+
         for idx in range(batch_size):
-            gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
-            if gt_tokens.numel() == 0:
+            gt_tokens = labels[idx][labels[idx]!=IGNORE_INDEX]
+            if gt_tokens.numel()==0:
                 continue
             pred_row = pred_ids[idx]
-            # ensure same length slice if pred shorter
-            seq_len = gt_tokens.size(0)
-            if pred_row.size(0) < seq_len:
-                seq_len = pred_row.size(0)
-            pred_tokens = pred_row[:seq_len]
+            seq_len = min(gt_tokens.size(0), pred_row.size(0))
+            gt_text  = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=False)
+            pred_text= tokenizer.decode(pred_row[:seq_len], skip_special_tokens=False)
 
-            gt_text = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=False)
-            pred_text = tokenizer.decode(pred_tokens, skip_special_tokens=False)
+            ltype="binary"
+            if eval_examples is not None and idx < len(eval_examples):
+                ltype = eval_examples[idx]["meta"]["label_type"]
+            gt_val  = extract(gt_text, ltype)
+            pred_val= extract(pred_text, ltype)
 
-            # extract FIRST ANSWER: x occurrence
-            def extract(ans):
-                m = re.findall(r"ANSWER:\s*([01])", ans.upper())
-                return m[0] if m else ""  # empty if not found
+            if samples_printed<5:
+                prompt_full="<unknown>"
+                if eval_examples is not None and idx<len(eval_examples):
+                    prompt_full = tokenizer.decode(eval_examples[idx]["input_ids"][0], skip_special_tokens=False)[:400]
+                logging.info(f"[Eval sample {idx}] type={ltype}\nPrompt: {prompt_full}\nGT: {gt_val}\nPred: {pred_val}\nRawPred: {pred_text[:100]}\n")
+                samples_printed+=1
 
-            if samples_printed < 10:
-                question = "<unknown>"
-                if eval_examples is not None and idx < len(eval_examples):
-                    q_ids = eval_examples[idx]["input_ids"][0].tolist()
-                    question = tokenizer.decode([t for t in q_ids if t != tokenizer.pad_token_id], skip_special_tokens=True)[:120]
-                logging.info(f"[Eval sample {idx}]\nQ: {question}\nExpected: {extract(gt_text)}\nPredicted: {extract(pred_text)}\nRawPred: {pred_text[:60]}\n")
-                samples_printed += 1
+            if gt_val!="":
+                total[ltype]+=1
+                if gt_val==pred_val:
+                    correct[ltype]+=1
 
-            if extract(gt_text) == extract(pred_text):
-                correct += 1
-            evaluated += 1
-
-        acc = correct / max(1, evaluated)
-        logging.info(f"[Eval] exact_match {correct}/{evaluated} = {acc:.4f}")
-        return {"exact_match": acc}
+        acc_dict={f"exact_match_{k}":(correct[k]/total[k] if total[k]>0 else 0.0) for k in total}
+        overall_correct=sum(correct.values())
+        overall_total = sum(total.values())
+        acc_dict["exact_match"] = overall_correct/overall_total if overall_total>0 else 0.0
+        logging.info(f"[Eval] overall {overall_correct}/{overall_total} = {acc_dict['exact_match']:.4f}")
+        return acc_dict
 
 
     class ArgmaxTrainer(Trainer):

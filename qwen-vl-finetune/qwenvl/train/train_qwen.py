@@ -84,8 +84,6 @@ class HFSaverCallback(TrainerCallback):
             self.image_processor.save_pretrained(ckpt)
 
         logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
-
-        logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
         return control
 
 
@@ -212,6 +210,8 @@ def train(attn_implementation="flash_attention_2"):
         callbacks=[hf_saver_cb],
         **data_module
     )
+    # Provide the trainer instance to the callback so it can access DeepSpeed state
+    hf_saver_cb.trainer = trainer
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")

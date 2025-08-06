@@ -295,7 +295,6 @@ def train(attn_implementation="flash_attention_2"):
                 )
                 gen_inputs = {k: v for k, v in inputs.items() if k != "attention_mask"}
 
-                import torch.backends.cuda
                 with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=True, enable_memory_efficient=True):
                     generated_ids = model.generate(**gen_inputs, **gen_kwargs)
 

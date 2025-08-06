@@ -199,10 +199,9 @@ def train(attn_implementation="flash_attention_2"):
 
     trainer = Trainer(
         model=model,
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         args=training_args,
-        # TODO: this is broken
-        # callbacks=[hf_saver_cb],
+        callbacks=[hf_saver_cb],
         **data_module
     )
 

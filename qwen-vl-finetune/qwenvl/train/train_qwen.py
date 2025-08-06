@@ -298,6 +298,11 @@ def train(attn_implementation="flash_attention_2"):
 
                 # Ensure attention_mask is 2-D for generation
                 gen_inputs = {k: v for k, v in inputs.items() if k != "attention_mask"}
+                # Build cumulative length attention mask expected by varlen flash-attn
+                seq_len = gen_inputs["input_ids"].shape[1]
+                cu_seqlens = torch.tensor([0, seq_len], dtype=torch.int32, device=gen_inputs["input_ids"].device)
+                gen_inputs["attention_mask"] = cu_seqlens
+
                 generated_ids = model.generate(**gen_inputs, **gen_kwargs)
 
                 # Trim the prompt prefix so we keep only new tokens

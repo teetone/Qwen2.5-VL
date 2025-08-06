@@ -208,25 +208,11 @@ def train(attn_implementation="flash_attention_2"):
     eval_examples = data_module.get('eval_dataset', None)
 
     def compute_metrics(eval_preds):
-        logits, labels = eval_preds  # logits: (batch, seq, vocab)
-        if isinstance(logits, np.ndarray):
-            logits = torch.tensor(logits)
+        preds_ids, labels = eval_preds  # preds_ids already contain only generated tokens
+        if isinstance(preds_ids, np.ndarray):
+            preds_ids = torch.tensor(preds_ids)
         if isinstance(labels, np.ndarray):
             labels = torch.tensor(labels)
-
-        pred_ids = logits.argmax(-1)  # could be (batch, seq) or (seq) or scalar
-
-        # ensure 2-D predictions
-        if pred_ids.dim() == 0:               # scalar => repeat for each label token
-            pred_ids = pred_ids.unsqueeze(0).repeat(labels.view(-1).size(0))
-        if pred_ids.dim() == 1 and labels.dim() == 2:
-            # split the flat vector according to each sample length
-            splits, start = [], 0
-            for row in labels:
-                ln = (row != IGNORE_INDEX).sum().item()
-                splits.append(pred_ids[start:start+ln])
-                start += ln
-            pred_ids = torch.nn.utils.rnn.pad_sequence(splits, batch_first=True, padding_value=tokenizer.pad_token_id)
 
         batch_size = labels.size(0)
         correct = 0
@@ -235,22 +221,25 @@ def train(attn_implementation="flash_attention_2"):
         MAX_PRINT_PER_TYPE = 5
 
         def extract_any(ans:str):
-            m=re.search(r"ANSWER:\s*([-+]?[0-9]*\.?[0-9]+)", ans, flags=re.IGNORECASE)
+            m = re.search(r"ANSWER:\s*([-+]?[0-9]*\.?[0-9]+)", ans, flags=re.IGNORECASE)
             return m.group(1) if m else ""
 
         for idx in range(batch_size):
-            gt_tokens = labels[idx][labels[idx]!=IGNORE_INDEX]
-            if gt_tokens.numel()==0:
+            # ground-truth text from labels (same as before)
+            gt_tokens = labels[idx][labels[idx] != IGNORE_INDEX]
+            if gt_tokens.numel() == 0:
                 continue
-            pred_row = pred_ids[idx]
-            seq_len = min(gt_tokens.size(0), pred_row.size(0))
-            gt_text  = tokenizer.decode(gt_tokens[:seq_len], skip_special_tokens=False)
-            pred_text= tokenizer.decode(pred_row[:seq_len], skip_special_tokens=False)
+            gt_text = tokenizer.decode(gt_tokens, skip_special_tokens=False)
 
-            gt_val  = extract_any(gt_text)
+            # prediction text – drop PAD tokens
+            pred_row = preds_ids[idx]
+            pred_row = pred_row[pred_row != tokenizer.pad_token_id]
+            pred_text = tokenizer.decode(pred_row, skip_special_tokens=False)
+
+            gt_val   = extract_any(gt_text)
             pred_val = extract_any(pred_text)
 
-            # print up to 5 samples for each task type (binary/progress/discrete)
+            # balanced printing: 5 per task type
             prompt_full = "<unknown>"
             if eval_examples is not None and idx < len(eval_examples):
                 try:
@@ -271,7 +260,7 @@ def train(attn_implementation="flash_attention_2"):
                 logging.info(f"[Eval sample {idx} | {ltype}]\nPrompt: {prompt_full}\nGT: {gt_val}\nPred: {pred_val}\nRawPred: {pred_text[:200]}\n")
                 print_counts[ltype] += 1
 
-            if gt_val!="":
+            if gt_val != "":
                 total += 1
                 if gt_val == pred_val:
                     correct += 1
@@ -281,21 +270,50 @@ def train(attn_implementation="flash_attention_2"):
         return {"exact_match": acc}
 
 
-    class ArgmaxTrainer(Trainer):
+    # ------------------------------------------------------------------
+    # Generation-based evaluation trainer
+    # ------------------------------------------------------------------
+    if not hasattr(training_args, "generation_max_new_tokens"):
+        training_args.generation_max_new_tokens = 8  # sensible default
+
+    class GenTrainer(Trainer):
+        """Run model.generate() during evaluation and return generated ids."""
+        def __init__(self, *args, tokenizer=None, **kwargs):
+            super().__init__(*args, tokenizer=tokenizer, **kwargs)
+            self.tokenizer = tokenizer or kwargs.get("tokenizer")
+
         def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+            # During evaluation we want generated tokens; for loss-only pass defer to base.
+            if prediction_loss_only:
+                return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys)
+
             with torch.no_grad():
-                loss, logits, labels = super().prediction_step(model, inputs, False, ignore_keys)
-            # Convert logits to predicted token IDs (same shape as labels)
-            preds = logits.argmax(-1)
+                # Compute loss via standard forward to keep it consistent
+                loss, _, labels = super().prediction_step(model, inputs, False, ignore_keys)
+
+                gen_kwargs = dict(
+                    max_new_tokens=getattr(self.args, "generation_max_new_tokens", 8),
+                    num_beams=1,
+                )
+                # model.generate needs the same keys that the forward pass gets.
+                generated_ids = model.generate(**inputs, **gen_kwargs)
+
+                # Trim the prompt prefix so we keep only new tokens
+                input_len = inputs["input_ids"].shape[1]
+                trimmed = [seq[input_len:] for seq in generated_ids]
+                # Pad so we can stack into a tensor
+                preds = torch.nn.utils.rnn.pad_sequence(
+                    trimmed, batch_first=True, padding_value=self.tokenizer.pad_token_id
+                )
             return (loss, preds, labels)
 
     # ensure evaluation does not accumulate huge GPU tensors
     if training_args.eval_accumulation_steps is None:
         training_args.eval_accumulation_steps = 1
 
-    trainer = ArgmaxTrainer(
+    trainer = GenTrainer(
         model=model,
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         args=training_args,
         compute_metrics=compute_metrics,
         # callbacks=[hf_saver_cb],

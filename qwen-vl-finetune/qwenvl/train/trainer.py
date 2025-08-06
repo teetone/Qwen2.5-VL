@@ -83,7 +83,7 @@ def _flash_attention_forward(
             dim=0,
         )
     else:
-        cu_seqlens = attention_mask
+        cu_seqlens = attention_mask.to(torch.int32)
 
     with torch.no_grad():
         max_seqlen = int((cu_seqlens[1:] - cu_seqlens[:-1]).max().item())

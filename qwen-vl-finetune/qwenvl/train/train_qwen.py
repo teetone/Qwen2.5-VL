@@ -165,8 +165,8 @@ def train(attn_implementation="flash_attention_2"):
         )
         data_args.model_type = "qwen2vl"
 
-    if data_args.data_flatten:
-        replace_qwen2_vl_attention_class()
+    # ensure patched flash-attention is in use for any setting
+    replace_qwen2_vl_attention_class()
     model.config.use_cache = False
 
     if training_args.gradient_checkpointing:

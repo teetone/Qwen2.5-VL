@@ -79,11 +79,13 @@ def _flash_attention_forward(
         # Convert 2-D (batch, seq_len) mask -> cumulative lengths vector
         lengths = attention_mask.sum(dim=1, dtype=torch.int32)
         cu_seqlens = torch.cat(
-            [torch.zeros(1, dtype=torch.int32, device=attention_mask.device), torch.cumsum(lengths, dim=0)],
+            [torch.zeros(1, dtype=torch.int32, device=attention_mask.device), torch.cumsum(lengths, dim=0, dtype=torch.int32)],
             dim=0,
         )
     else:
-        cu_seqlens = attention_mask.to(torch.int32)
+        cu_seqlens = attention_mask.to(dtype=torch.int32)
+
+    cu_seqlens = cu_seqlens.to(dtype=torch.int32, non_blocking=True)
 
     with torch.no_grad():
         max_seqlen = int((cu_seqlens[1:] - cu_seqlens[:-1]).max().item())

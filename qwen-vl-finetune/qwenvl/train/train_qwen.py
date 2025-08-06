@@ -22,7 +22,6 @@ import torch
 import transformers
 import json
 from typing import Dict
-import shutil
 import sys
 from pathlib import Path
 
@@ -71,22 +70,20 @@ class HFSaverCallback(TrainerCallback):
             # If still None, skip saving to avoid errors.
             return control
 
-        model = trainer.model
-        # ZeRO-3: gather full weights (handles non-ZeRO too)
-        try:
-            full_state = trainer.accelerator.get_state_dict(model)
-        except AttributeError:
-            # Fallback for models that do not implement DeepSpeed hooks
-            full_state = {k: v.cpu() for k, v in model.state_dict().items()}
-
+        # Save a HF-compatible checkpoint (full weights gathered under ZeRO-3)
         ckpt = self.root_dir / f"step-{state.global_step}"
         ckpt.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(ckpt, state_dict=full_state)
 
-        # save tokenizer / processor only the first time
+        # Use the same helper we invoke at the very end of training so the logic
+        # for DeepSpeed / CPU gathering stays in one place.
+        safe_save_model_for_hf_trainer(trainer, str(ckpt))
+
+        # Save tokenizer / processor only once per run
         if not (ckpt / "tokenizer_config.json").exists():
             self.tokenizer.save_pretrained(ckpt)
             self.image_processor.save_pretrained(ckpt)
+
+        logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
 
         logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
         return control
@@ -203,6 +200,7 @@ def train(attn_implementation="flash_attention_2"):
     else:
         data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
 
+    # Periodic HF checkpoints
     hf_ckpt_root = pathlib.Path(training_args.output_dir) / "hf_checkpoints"
     hf_ckpt_root.mkdir(parents=True, exist_ok=True)
     hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
@@ -214,9 +212,6 @@ def train(attn_implementation="flash_attention_2"):
         callbacks=[hf_saver_cb],
         **data_module
     )
-
-    # Link the trainer back to the callback so it can access accelerator/state_dict
-    hf_saver_cb.trainer = trainer
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")

@@ -55,9 +55,10 @@ class HFSaverCallback(TrainerCallback):
         self.root_dir = root_dir
         self.trainer = None          # will be set once on_train_begin
 
-    # 1️⃣ grab the trainer reference when training starts
+    # 1️⃣ optionally grab the trainer reference when training starts
     def on_train_begin(self, args, state, control, **kwargs):
-        self.trainer = kwargs["trainer"]          # never None here
+        # `trainer` isn't always provided by Transformers; capture it if present.
+        self.trainer = kwargs.get("trainer", self.trainer)
         return control
 
     # 2️⃣ save HF-ready checkpoint every save event
@@ -65,9 +66,14 @@ class HFSaverCallback(TrainerCallback):
         if args.local_rank not in (-1, 0):        # Rank-0 only
             return control
 
-        model = self.trainer.model
+        trainer = kwargs.get("trainer", self.trainer)
+        if trainer is None:
+            # If still None, skip saving to avoid errors.
+            return control
+
+        model = trainer.model
         # ZeRO-3: gather full weights
-        full_state = self.trainer.accelerator.get_state_dict(model)
+        full_state = trainer.accelerator.get_state_dict(model)
 
         ckpt = self.root_dir / f"step-{state.global_step}"
         ckpt.mkdir(parents=True, exist_ok=True)

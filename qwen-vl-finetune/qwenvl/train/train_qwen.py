@@ -78,10 +78,10 @@ class HFSaverCallback(TrainerCallback):
         # for DeepSpeed / CPU gathering stays in one place.
         safe_save_model_for_hf_trainer(trainer, str(ckpt))
 
-        # Save tokenizer / processor only once per run
-        if not (ckpt / "tokenizer_config.json").exists():
-            self.tokenizer.save_pretrained(ckpt)
-            self.image_processor.save_pretrained(ckpt)
+        # Save tokenizer / processor. We save them unconditonally in case
+        # a previous save was interrupted.
+        self.tokenizer.save_pretrained(str(ckpt))
+        self.image_processor.save_pretrained(str(ckpt))
 
         logging.info(f"[HF-Saver] wrote HF checkpoint to {ckpt}")
         return control

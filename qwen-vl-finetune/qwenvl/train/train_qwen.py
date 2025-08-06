@@ -271,50 +271,45 @@ def train(attn_implementation="flash_attention_2"):
 
 
     # ------------------------------------------------------------------
-    # Generation-based evaluation trainer
+    # Generation-based evaluation trainer with flash-attn temporarily disabled
     # ------------------------------------------------------------------
     if not hasattr(training_args, "generation_max_new_tokens"):
-        training_args.generation_max_new_tokens = 8  # sensible default
+        training_args.generation_max_new_tokens = 8
 
-    class GenTrainer(Trainer):
-        """Run model.generate() during evaluation and return generated ids."""
+    class GenTrainerSafe(Trainer):
+        """During evaluation runs model.generate with flash-attention disabled (flash off)"""
         def __init__(self, *args, tokenizer=None, **kwargs):
             super().__init__(*args, tokenizer=tokenizer, **kwargs)
             self.tokenizer = tokenizer or kwargs.get("tokenizer")
 
         def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
-            # During evaluation we want generated tokens; for loss-only pass defer to base.
             if prediction_loss_only:
                 return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys)
 
             with torch.no_grad():
-                # Compute loss via standard forward to keep it consistent
                 loss, _, labels = super().prediction_step(model, inputs, True, ignore_keys)
 
                 gen_kwargs = dict(
                     max_new_tokens=getattr(self.args, "generation_max_new_tokens", 8),
                     num_beams=1,
                 )
-
-                # Ensure attention_mask is 2-D for generation
-                # Reconstruct a standard 2-D attention mask (batch, seq_len)
                 gen_inputs = {k: v for k, v in inputs.items() if k != "attention_mask"}
-                generated_ids = model.generate(**gen_inputs, **gen_kwargs)
 
-                # Trim the prompt prefix so we keep only new tokens
-                input_len = inputs["input_ids"].shape[1]
-                trimmed = [seq[input_len:] for seq in generated_ids]
-                # Pad so we can stack into a tensor
-                preds = torch.nn.utils.rnn.pad_sequence(
-                    trimmed, batch_first=True, padding_value=self.tokenizer.pad_token_id
-                )
+                import torch.backends.cuda
+                with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=True, enable_memory_efficient=True):
+                    generated_ids = model.generate(**gen_inputs, **gen_kwargs)
+
+                prompt_len = inputs["input_ids"].shape[1]
+                trimmed = [seq[prompt_len:] for seq in generated_ids]
+                preds = torch.nn.utils.rnn.pad_sequence(trimmed, batch_first=True, padding_value=self.tokenizer.pad_token_id)
             return (loss, preds, labels)
+
 
     # ensure evaluation does not accumulate huge GPU tensors
     if training_args.eval_accumulation_steps is None:
         training_args.eval_accumulation_steps = 1
 
-    trainer = GenTrainer(
+    trainer = GenTrainerSafe(
         model=model,
         tokenizer=tokenizer,
         args=training_args,

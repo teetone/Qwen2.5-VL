@@ -231,7 +231,8 @@ def train(attn_implementation="flash_attention_2"):
         batch_size = labels.size(0)
         correct = 0
         total   = 0
-        samples_printed = 0
+        print_counts = {"binary":0, "progress":0, "discrete":0}
+        MAX_PRINT_PER_TYPE = 5
 
         def extract_any(ans:str):
             m=re.search(r"ANSWER:\s*([-+]?[0-9]*\.?[0-9]+)", ans, flags=re.IGNORECASE)
@@ -249,13 +250,26 @@ def train(attn_implementation="flash_attention_2"):
             gt_val  = extract_any(gt_text)
             pred_val = extract_any(pred_text)
 
-            # randomly print up to 15 examples per eval
-            if samples_printed < 15 and random.random() < 0.3:
-                prompt_full="<unknown>"
-                if eval_examples is not None and idx<len(eval_examples):
+            # print up to 5 samples for each task type (binary/progress/discrete)
+            prompt_full = "<unknown>"
+            if eval_examples is not None and idx < len(eval_examples):
+                try:
                     prompt_full = tokenizer.decode(eval_examples[idx]["input_ids"][0], skip_special_tokens=False)[:400]
-                logging.info(f"[Eval sample {idx}]\nPrompt: {prompt_full}\nGT: {gt_val}\nPred: {pred_val}\nRawPred: {pred_text[:200]}\n")
-                samples_printed+=1
+                except Exception:
+                    pass
+            prompt_lower = prompt_full.lower()
+            if "binary" in prompt_lower:
+                ltype = "binary"
+            elif "discrete" in prompt_lower:
+                ltype = "discrete"
+            elif "progress" in prompt_lower:
+                ltype = "progress"
+            else:
+                ltype = "unknown"
+
+            if ltype in print_counts and print_counts[ltype] < MAX_PRINT_PER_TYPE:
+                logging.info(f"[Eval sample {idx} | {ltype}]\nPrompt: {prompt_full}\nGT: {gt_val}\nPred: {pred_val}\nRawPred: {pred_text[:200]}\n")
+                print_counts[ltype] += 1
 
             if gt_val!="":
                 total += 1

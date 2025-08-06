@@ -72,8 +72,12 @@ class HFSaverCallback(TrainerCallback):
             return control
 
         model = trainer.model
-        # ZeRO-3: gather full weights
-        full_state = trainer.accelerator.get_state_dict(model)
+        # ZeRO-3: gather full weights (handles non-ZeRO too)
+        try:
+            full_state = trainer.accelerator.get_state_dict(model)
+        except AttributeError:
+            # Fallback for models that do not implement DeepSpeed hooks
+            full_state = {k: v.cpu() for k, v in model.state_dict().items()}
 
         ckpt = self.root_dir / f"step-{state.global_step}"
         ckpt.mkdir(parents=True, exist_ok=True)

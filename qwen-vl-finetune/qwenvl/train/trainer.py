@@ -75,15 +75,18 @@ def _flash_attention_forward(
     query_states = query_states.squeeze(0)
     key_states = key_states.squeeze(0)
     value_states = value_states.squeeze(0)
-    cu_seqlens = attention_mask
+    if attention_mask.dim() == 2:
+        # Convert 2-D (batch, seq_len) mask -> cumulative lengths vector
+        lengths = attention_mask.sum(dim=1, dtype=torch.int32)
+        cu_seqlens = torch.cat(
+            [torch.zeros(1, dtype=torch.int32, device=attention_mask.device), torch.cumsum(lengths, dim=0)],
+            dim=0,
+        )
+    else:
+        cu_seqlens = attention_mask
 
     with torch.no_grad():
-        max_seqlen = max(
-            [
-                cu_seqlens[idx + 1] - cu_seqlens[idx]
-                for idx in range(cu_seqlens.size(0) - 1)
-            ]
-        ).item()
+        max_seqlen = int((cu_seqlens[1:] - cu_seqlens[:-1]).max().item())
 
     if not use_top_left_mask:
         causal = is_causal

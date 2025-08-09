@@ -41,6 +41,21 @@ ROBOMIMIC_CAN = {
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_can",
 }
 
+ROBOMIMIC_LIFT = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_lift/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_lift",
+}
+
+ROBOMIMIC_SQUARE = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_square/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_square",
+}
+
+ROBOMIMIC_TRANSPORT = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_transport/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_transport",
+}
+
 data_dict = {
     "cambrian_737k": CAMBRIAN_737K,
     "cambrian_737k_pack": CAMBRIAN_737K_PACK,
@@ -50,6 +65,9 @@ data_dict = {
     "robo_reward_bench": ROBO_REWARD_BENCH,
     "robomimic": ROBOMIMIC,
     "robomimic_can": ROBOMIMIC_CAN,
+    "robomimic_lift": ROBOMIMIC_LIFT,
+    "robomimic_square": ROBOMIMIC_SQUARE,
+    "robomimic_transport": ROBOMIMIC_TRANSPORT,
 }
 
 

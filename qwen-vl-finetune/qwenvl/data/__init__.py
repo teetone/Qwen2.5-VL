@@ -42,8 +42,8 @@ ROBOMIMIC_CAN = {
 }
 
 ROBOMIMIC_LIFT = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-12_19-22-57_1/2025-08-12_19-22-57_1/collected/train.json",
-    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-12_19-22-57_1/2025-08-12_19-22-57_1/collected",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected",
 }
 
 ROBOMIMIC_SQUARE = {

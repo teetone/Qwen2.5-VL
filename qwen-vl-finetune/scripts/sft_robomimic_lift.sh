@@ -34,7 +34,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robomimic-ft-lift-only"
-OUTPUT_DIR="./output_robomimic_3b_lift_only_8_7"
+OUTPUT_DIR="./output_robomimic_3b_lift_only_8_16"
 
 ############################
 # Argument string

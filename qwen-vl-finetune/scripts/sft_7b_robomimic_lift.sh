@@ -22,11 +22,11 @@ ENTRY="qwenvl/train/train_qwen.py"
 # Hyperparameters
 ############################
 LR=3e-6
-PER_GPU_BATCH=2
-GRAD_ACCUM=32
+PER_GPU_BATCH=8
+GRAD_ACCUM=8
 SCHED="cosine_with_restarts"
 MAX_STEPS=5000
-EVAL_STEPS=100
+EVAL_STEPS=200
 WDECAY=0.02
 SAVE_STEPS=${EVAL_STEPS}
 

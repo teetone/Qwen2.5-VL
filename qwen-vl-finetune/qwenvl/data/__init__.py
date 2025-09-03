@@ -37,8 +37,8 @@ ROBOMIMIC = {
 }
 
 ROBOMIMIC_CAN = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_can/train.json",
-    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_can",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_can/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_can",
 }
 
 ROBOMIMIC_LIFT = {

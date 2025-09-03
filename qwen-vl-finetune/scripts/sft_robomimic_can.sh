@@ -25,16 +25,16 @@ LR=4e-6
 PER_GPU_BATCH=4
 GRAD_ACCUM=16
 SCHED="cosine_with_restarts"
-MAX_STEPS=5000
-EVAL_STEPS=500
+MAX_STEPS=2000
 WDECAY=0.02
+EVAL_STEPS=50
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-robomimic-ft-can-only"
-OUTPUT_DIR="./output_robomimic_3b_can_only_8_7"
+OUTPUT_DIR="./output_robomimic_3b_can_only_9_3"
 
 ############################
 # Argument string

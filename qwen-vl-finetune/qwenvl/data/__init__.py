@@ -42,18 +42,18 @@ ROBOMIMIC_CAN = {
 }
 
 ROBOMIMIC_LIFT = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected/train.json",
-    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/lift_collected/robomimic-dsrl/robomimic_lift_dsrl_collect_2025-08-14_19-14-21_1/2025-08-14_19-14-21_1/collected",
 }
 
 ROBOMIMIC_SQUARE = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_square/train.json",
-    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_square",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_square/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_square",
 }
 
 ROBOMIMIC_TRANSPORT = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_all/train_transport.json",
-    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/logs/reward_data_all",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_all/train_transport.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_all",
 }
 
 data_dict = {

@@ -26,6 +26,11 @@ VIDEOCHATGPT = {
     "data_path": "PATH_TO_VIDEOCHATGPT_DATA",
 }
 
+ROBOREWARD = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
+}
+
 ROBO_REWARD_BENCH = {
     "annotation_path": "/nlp/scr4/nlp/crfm/benchmarking/benchmarking/benchmark_output/scenarios/robo_reward_bench/output/train.json",
     "data_path": "/nlp/scr4/nlp/crfm/benchmarking/benchmarking/benchmark_output/scenarios/robo_reward_bench",
@@ -62,6 +67,7 @@ data_dict = {
     "mp_doc": MP_DOC,
     "clevr_mc": CLEVR_MC,
     "videochatgpt": VIDEOCHATGPT,
+    "roboreward": ROBOREWARD,
     "robo_reward_bench": ROBO_REWARD_BENCH,
     "robomimic": ROBOMIMIC,
     "robomimic_can": ROBOMIMIC_CAN,

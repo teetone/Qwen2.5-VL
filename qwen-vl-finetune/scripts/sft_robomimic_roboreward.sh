@@ -35,7 +35,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-roboreward"
-OUTPUT_DIR="./output_roboreward_9_12_balanced"
+OUTPUT_DIR="./output_roboreward_9_13_balanced"
 
 ############################
 # Argument string

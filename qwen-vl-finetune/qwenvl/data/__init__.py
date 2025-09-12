@@ -27,7 +27,7 @@ VIDEOCHATGPT = {
 }
 
 ROBOREWARD = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_with_justification_balanced.json",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_balanced.json",
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
 }
 

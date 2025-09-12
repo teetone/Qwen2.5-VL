@@ -15,8 +15,8 @@ DEEPSPEED_CFG="./scripts/zero3.json"
 # Model & data paths
 ############################
 MODEL_ID="Qwen/Qwen2.5-VL-3B-Instruct"
-# DATASETS="roboreward%100"
-DATASETS="roboreward_no_justification%100"
+DATASETS="roboreward%100"
+# DATASETS="roboreward_no_justification%100"
 ENTRY="qwenvl/train/train_qwen.py"
 
 ############################
@@ -35,7 +35,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-roboreward"
-OUTPUT_DIR="./output_roboreward_9_11"
+OUTPUT_DIR="./output_roboreward_9_12_balanced"
 
 ############################
 # Argument string

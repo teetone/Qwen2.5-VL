@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fine-tune Qwen-2.5-VL-3B on Robo-Reward bench (400 examples)
+# Fine-tune Qwen-2.5-VL-3B on RoboReward train set
 
 ############################
 # Distributed / DeepSpeed
@@ -35,7 +35,7 @@ SAVE_STEPS=${EVAL_STEPS}
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-roboreward"
-OUTPUT_DIR="./output_roboreward_9_13_balanced"
+OUTPUT_DIR="./output_roboreward_9_14_balanced"
 
 ############################
 # Argument string

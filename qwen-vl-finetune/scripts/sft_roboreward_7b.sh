@@ -55,7 +55,7 @@ ARGS="
  --gradient_accumulation_steps ${GRAD_ACCUM} \
  --max_pixels 50176 \
  --min_pixels 16384 \
- --eval_strategy \"no\" \
+ --eval_strategy "no" \
  --eval_steps ${EVAL_STEPS} \
  --save_strategy steps \
  --save_steps ${SAVE_STEPS} \

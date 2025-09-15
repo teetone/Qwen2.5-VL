@@ -27,14 +27,14 @@ GRAD_ACCUM=32                        # keeps effective batch ~= 64
 SCHED="cosine"
 MAX_STEPS=3000
 WDECAY=0.05
-EVAL_STEPS=100
+EVAL_STEPS=200
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-7b-roboreward"
-OUTPUT_DIR="./output_roboreward_9_14_balanced_7b"
+OUTPUT_DIR="./output_roboreward_9_15_balanced_7b"
 
 ############################
 # Argument string

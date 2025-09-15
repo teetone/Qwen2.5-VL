@@ -28,14 +28,14 @@ GRAD_ACCUM=16
 SCHED="cosine_with_restarts"
 MAX_STEPS=4000
 WDECAY=0.05
-EVAL_STEPS=100
+EVAL_STEPS=200
 SAVE_STEPS=${EVAL_STEPS}
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen2vl-3b-roboreward"
-OUTPUT_DIR="./output_roboreward_9_14_balanced"
+OUTPUT_DIR="./output_roboreward_9_15_balanced"
 
 ############################
 # Argument string

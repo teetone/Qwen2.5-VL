@@ -66,6 +66,11 @@ ROBOMIMIC_TRANSPORT = {
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/reward_data_all",
 }
 
+WORLD_MODEL_REWARDS = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/world_model_rewards/train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/rl_logs/world_model_rewards",
+}
+
 data_dict = {
     "cambrian_737k": CAMBRIAN_737K,
     "cambrian_737k_pack": CAMBRIAN_737K_PACK,
@@ -80,6 +85,7 @@ data_dict = {
     "robomimic_lift": ROBOMIMIC_LIFT,
     "robomimic_square": ROBOMIMIC_SQUARE,
     "robomimic_transport": ROBOMIMIC_TRANSPORT,
+    "world_model_rewards": WORLD_MODEL_REWARDS,
 }
 
 

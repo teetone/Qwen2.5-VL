@@ -7,6 +7,6 @@ wheels/
 *.egg-info
 
 # venv
-.venv
+venv/
 
 .idea

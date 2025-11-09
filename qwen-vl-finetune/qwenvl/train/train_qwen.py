@@ -31,10 +31,13 @@ sys.path.append(str(project_root))
 from trainer import replace_qwen2_vl_attention_class
 
 from transformers import (
+    AutoProcessor,
     Qwen2VLForConditionalGeneration,
     Qwen2_5_VLForConditionalGeneration,
     Qwen3VLForConditionalGeneration,
-    Qwen3VLMoeForConditionalGeneration
+    Qwen3VLMoeForConditionalGeneration,
+    Trainer,
+    TrainerCallback,
 )
 from qwenvl.data.data_processor import make_supervised_data_module
 from qwenvl.train.argument import (
@@ -42,7 +45,7 @@ from qwenvl.train.argument import (
     DataArguments,
     TrainingArguments,
 )
-from transformers import AutoProcessor, Trainer
+
 
 local_rank = None
 

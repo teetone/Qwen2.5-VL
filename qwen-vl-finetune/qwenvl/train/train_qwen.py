@@ -231,7 +231,7 @@ def train(attn_implementation="flash_attention_2"):
     # Periodic HF checkpoints
     hf_ckpt_root = pathlib.Path(training_args.output_dir) / "hf_checkpoints"
     hf_ckpt_root.mkdir(parents=True, exist_ok=True)
-    hf_saver_cb = HFSaverCallback(tokenizer, data_args.image_processor, hf_ckpt_root)
+    hf_saver_cb = HFSaverCallback(tokenizer, processor, hf_ckpt_root)
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,

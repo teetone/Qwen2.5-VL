@@ -18,8 +18,8 @@ llm=Qwen/Qwen3-VL-4B-Instruct  # Using HuggingFace model ID
 lr=1e-5
 batch_size=4
 grad_accum_steps=4
-save_steps=100
-epochs=2
+save_steps=50
+epochs=20
 
 # Training entry point
 entry_file=qwenvl/train/train_qwen.py

@@ -12,10 +12,13 @@ deepspeed=./scripts/zero3.json
 # Model configuration
 llm=Qwen/Qwen3-VL-4B-Instruct  # Using HuggingFace model ID
 
-# Training hyperparameters
+############################
+# Hyperparameters
+############################
 lr=1e-5
 batch_size=4
 grad_accum_steps=4
+save_steps=100
 
 # Training entry point
 entry_file=qwenvl/train/train_qwen.py
@@ -46,8 +49,8 @@ args="
     --min_pixels 784 \
     --eval_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 1000 \
-    --save_total_limit 1 \
+    --save_steps ${save_steps} \
+    --save_total_limit 2 \
     --learning_rate ${lr} \
     --weight_decay 0 \
     --warmup_ratio 0.03 \

@@ -20,8 +20,6 @@ import logging
 import pathlib
 import torch
 import transformers
-import json
-from typing import Dict
 import sys
 from pathlib import Path
 

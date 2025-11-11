@@ -29,7 +29,7 @@ datasets=world_model_rewards
 
 # Output configuration
 run_name="qwen3vl-4b-world-model"
-output_dir=./output_world_model_rewards_11_8
+output_dir=./output_world_model_rewards_11_11
 
 # Training arguments
 args="

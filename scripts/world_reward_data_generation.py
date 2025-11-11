@@ -4,8 +4,10 @@ import json
 import os
 import random
 import shutil
-import re
+import subprocess
 from typing import Dict, List, Optional, Tuple
+
+from moviepy import VideoFileClip
 
 
 PROMPT_TEMPLATE = (
@@ -130,6 +132,80 @@ def determine_reward_label(dataset_dirname: str) -> int:
     return 1 if "score6" in dataset_dirname else 0
 
 
+def _which(cmd: str) -> bool:
+    return shutil.which(cmd) is not None
+
+
+def get_video_duration_seconds(path: str) -> Optional[float]:
+    with VideoFileClip(path) as clip:
+        return float(clip.duration) if clip.duration is not None else None
+
+
+def write_clip_with_ffmpeg(src: str, dst: str, start_sec: float, clip_len_sec: float) -> bool:
+    """
+    Create a clip using ffmpeg. Re-encode for reliability across arbitrary start times.
+    """
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg is required but was not found in PATH.")
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-ss",
+        str(max(0.0, float(start_sec))),
+        "-t",
+        str(max(0.01, float(clip_len_sec))),
+        "-i",
+        src,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-c:a",
+        "aac",
+        "-movflags",
+        "+faststart",
+        dst,
+    ]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    return True
+
+
+def augment_negative_examples(
+    items: List[Dict], seed: int = 42
+) -> List[Dict]:
+    """
+    For each reward=0 example, create additional examples by sampling random clips of
+    3, 4, and 5 seconds from the same source video.
+    """
+    augmented: List[Dict] = []
+    # Fixed starts and lengths as requested: 3s @ 0s, 4s @ 3s, 5s @ 4s, 6s @ 5s
+    fixed_clips = [(0.0, 3.0), (3.0, 4.0), (4.0, 5.0), (5.0, 6.0)]
+
+    for ex in items:
+        if ex.get("label", 0) != 0:
+            continue
+        src = ex.get("source_abs_path")
+        if not src or not os.path.isfile(src):
+            continue
+        duration = get_video_duration_seconds(src)
+        if duration is None or duration <= 0.0:
+            continue
+        for start_sec, clip_len in fixed_clips:
+            # Ensure the clip fits within the duration with a small margin
+            if duration <= (start_sec + clip_len + 0.25):
+                continue
+            aug = dict(ex)
+            aug["augment"] = True
+            aug["clip_length_sec"] = float(clip_len)
+            aug["clip_start_sec"] = float(start_sec)
+            # Keep label 0, same original path/task/meta
+            augmented.append(aug)
+    return items + augmented
+
+
 def split_train_eval(
     items: List[Dict], train_ratio: float = 0.85, seed: int = 42
 ) -> Tuple[List[Dict], List[Dict]]:
@@ -201,6 +277,7 @@ def build_output_entry(
     task_text: str,
     reward_label: int,
     original_rel_path: Optional[str],
+    is_augmented: bool = False,
 ) -> Dict:
     human_prompt = PROMPT_TEMPLATE.format(task=task_text if task_text else "N/A")
     entry = {
@@ -220,6 +297,8 @@ def build_output_entry(
     }
     if original_rel_path:
         entry["original_video_path"] = original_rel_path
+    if is_augmented:
+        entry["meta"]["data_augmentation"] = "clipped"
     return entry
 
 
@@ -240,8 +319,11 @@ def process(
     for ex in examples:
         ex["label"] = determine_reward_label(ex["dataset_dirname"])
 
+    # Augment negatives with random 3s/4s/5s clips
+    examples = augment_negative_examples(examples, seed=42)
+
     # Split into train/eval
-    train_items, eval_items = split_train_eval(examples, train_ratio=0.8, seed=42)
+    train_items, eval_items = split_train_eval(examples, train_ratio=0.85, seed=42)
 
     # Copy videos and build JSON entries
     train_entries: List[Dict] = []
@@ -268,15 +350,24 @@ def process(
         if not os.path.isfile(src):
             print(f"[WARN] Missing source video: {src}")
             continue
-        if not safe_copy(src, target_abs):
-            print(f"[WARN] Failed to copy: {src} -> {target_abs}")
-            continue
+        if ex.get("augment"):
+            start = float(ex.get("clip_start_sec", 0.0))
+            length = float(ex.get("clip_length_sec", 0.0))
+            ok = write_clip_with_ffmpeg(src, target_abs, start, length)
+            if not ok:
+                print(f"[WARN] Failed to clip: {src} -> {target_abs}")
+                continue
+        else:
+            if not safe_copy(src, target_abs):
+                print(f"[WARN] Failed to copy: {src} -> {target_abs}")
+                continue
         train_entries.append(
             build_output_entry(
                 target_rel,
                 ex.get("task_text") or "",
                 ex.get("label", 0),
                 ex.get("original_video_path"),
+                is_augmented=bool(ex.get("augment", False)),
             )
         )
 
@@ -289,15 +380,24 @@ def process(
         if not os.path.isfile(src):
             print(f"[WARN] Missing source video: {src}")
             continue
-        if not safe_copy(src, target_abs):
-            print(f"[WARN] Failed to copy: {src} -> {target_abs}")
-            continue
+        if ex.get("augment"):
+            start = float(ex.get("clip_start_sec", 0.0))
+            length = float(ex.get("clip_length_sec", 0.0))
+            ok = write_clip_with_ffmpeg(src, target_abs, start, length)
+            if not ok:
+                print(f"[WARN] Failed to clip: {src} -> {target_abs}")
+                continue
+        else:
+            if not safe_copy(src, target_abs):
+                print(f"[WARN] Failed to copy: {src} -> {target_abs}")
+                continue
         eval_entries.append(
             build_output_entry(
                 target_rel,
                 ex.get("task_text") or "",
                 ex.get("label", 0),
                 ex.get("original_video_path"),
+                is_augmented=bool(ex.get("augment", False)),
             )
         )
 

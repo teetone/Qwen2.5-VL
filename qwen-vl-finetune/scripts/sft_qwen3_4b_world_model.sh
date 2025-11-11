@@ -19,7 +19,7 @@ lr=1e-5
 batch_size=4
 grad_accum_steps=4
 save_steps=50
-epochs=20
+epochs=100
 
 # Training entry point
 entry_file=qwenvl/train/train_qwen.py

@@ -51,11 +51,11 @@ def extract_relative_video_path(
     The original relative path should start with 'data_rollout_ori/'.
     """
     normalized = raw_video_path.replace("\\", "/")
-    marker = "data_rollout_ori/"
+    marker = "data_rollout_v1110/"
     marker_idx = normalized.find(marker)
     if marker_idx != -1:
         rel_after_marker = normalized[marker_idx + len(marker) :]
-        original_rel = os.path.join("data_rollout_ori", rel_after_marker)
+        original_rel = os.path.join("data_rollout_v1110", rel_after_marker)
         abs_src = os.path.join(input_root, rel_after_marker)
         return original_rel, abs_src
 
@@ -69,7 +69,7 @@ def extract_relative_video_path(
         rel_after_root = os.path.join(
             dataset_dirname, "videos_ori", "val", f"{segment_index}.mp4"
         )
-    original_rel = os.path.join("data_rollout_ori", rel_after_root)
+    original_rel = os.path.join("data_rollout_v1110", rel_after_root)
     abs_src = os.path.join(input_root, rel_after_root)
     return original_rel, abs_src
 
@@ -99,24 +99,30 @@ def collect_examples(input_root: str) -> List[Dict]:
                 task_text = texts[0].strip()
             episode_id = data.get("episode_id")
             videos = data.get("videos") or []
-            # Create one example per video segment
-            for seg_idx, vid_item in enumerate(videos):
+            # Only use the segment with filename '2.mp4'
+            chosen_raw_path = None
+            for vid_item in videos:
                 raw_path = vid_item.get("video_path")
                 if not raw_path or not isinstance(raw_path, str):
                     continue
-                original_rel, abs_src = extract_relative_video_path(
-                    raw_path, input_root, dataset_name, episode_id, seg_idx
-                )
-                examples.append(
-                    {
-                        "dataset_dirname": dataset_name,
-                        "task_text": task_text,
-                        "episode_id": episode_id,
-                        "segment_index": seg_idx,
-                        "original_video_path": original_rel,
-                        "source_abs_path": abs_src,
-                    }
-                )
+                if os.path.basename(str(raw_path)) == "2.mp4":
+                    chosen_raw_path = str(raw_path)
+                    break
+            if not chosen_raw_path:
+                continue
+            original_rel, abs_src = extract_relative_video_path(
+                chosen_raw_path, input_root, dataset_name, episode_id, 2
+            )
+            examples.append(
+                {
+                    "dataset_dirname": dataset_name,
+                    "task_text": task_text,
+                    "episode_id": episode_id,
+                    "segment_index": 2,
+                    "original_video_path": original_rel,
+                    "source_abs_path": abs_src,
+                }
+            )
     return examples
 
 
@@ -125,7 +131,7 @@ def determine_reward_label(dataset_dirname: str) -> int:
 
 
 def split_train_eval(
-    items: List[Dict], train_ratio: float = 0.8, seed: int = 42
+    items: List[Dict], train_ratio: float = 0.85, seed: int = 42
 ) -> Tuple[List[Dict], List[Dict]]:
     """
     Stratified split: aim for ~50/50 label distribution in eval set when possible.
@@ -314,7 +320,7 @@ def main() -> None:
     parser.add_argument(
         "--input_path",
         type=str,
-        default="/Users/tonyhlee/Downloads/data_rollout_ori",
+        default="/Users/tonyhlee/Downloads/data_rollout_v1110",
         help="Root path containing multiple dataset folders (read-only).",
     )
     parser.add_argument(

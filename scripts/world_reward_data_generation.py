@@ -177,12 +177,14 @@ def augment_negative_examples(
     items: List[Dict], seed: int = 42
 ) -> List[Dict]:
     """
-    For each reward=0 example, create additional examples by sampling random clips of
-    3, 4, and 5 seconds from the same source video.
+    For each reward=0 example, create additional fixed-start clips from the beginning:
+    lengths 1, 2, 3, 4, 5, 6 seconds with slight jitter, ensuring at least 2s remain after the clip.
     """
+    rng = random.Random(seed)
     augmented: List[Dict] = []
-    # Fixed starts and lengths as requested: 3s @ 0s, 4s @ 3s, 5s @ 4s, 6s @ 5s
-    fixed_clips = [(0.0, 3.0), (3.0, 4.0), (4.0, 5.0), (5.0, 6.0)]
+    base_lengths = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    jitter_range = 0.25  # +/- seconds around the target length
+    min_length = 0.5     # guardrail
 
     for ex in items:
         if ex.get("label", 0) != 0:
@@ -193,9 +195,13 @@ def augment_negative_examples(
         duration = get_video_duration_seconds(src)
         if duration is None or duration <= 0.0:
             continue
-        for start_sec, clip_len in fixed_clips:
-            # Ensure the clip fits within the duration with a small margin
-            if duration <= (start_sec + clip_len + 0.25):
+        for base_len in base_lengths:
+            # jitter length but keep start at 0.0
+            jitter = rng.uniform(-jitter_range, jitter_range)
+            clip_len = max(min_length, base_len + jitter)
+            start_sec = 0.0
+            # leave at least 2 seconds after the clip
+            if duration <= (clip_len + 2.0):
                 continue
             aug = dict(ex)
             aug["augment"] = True
@@ -206,8 +212,38 @@ def augment_negative_examples(
     return items + augmented
 
 
+def augment_positive_examples(items: List[Dict]) -> List[Dict]:
+    """
+    For each reward=1 example, create additional clips from the end:
+    lengths 1, 2, 3, 4 seconds with start placed so that the clip ends at the video end.
+    """
+    augmented: List[Dict] = []
+    base_lengths = [1.0, 2.0, 3.0, 4.0]
+
+    for ex in items:
+        if ex.get("label", 0) != 1:
+            continue
+        src = ex.get("source_abs_path")
+        if not src or not os.path.isfile(src):
+            continue
+        duration = get_video_duration_seconds(src)
+        if duration is None or duration <= 0.0:
+            continue
+        for clip_len in base_lengths:
+            if duration <= clip_len:
+                continue
+            start_sec = max(0.0, duration - clip_len)
+            aug = dict(ex)
+            aug["augment"] = True
+            aug["clip_length_sec"] = float(clip_len)
+            aug["clip_start_sec"] = float(start_sec)
+            # Keep label 1, same original path/task/meta
+            augmented.append(aug)
+    return items + augmented
+
+
 def split_train_eval(
-    items: List[Dict], train_ratio: float = 0.85, seed: int = 42
+    items: List[Dict], train_ratio: float = 0.9, seed: int = 42
 ) -> Tuple[List[Dict], List[Dict]]:
     """
     Stratified split: aim for ~50/50 label distribution in eval set when possible.
@@ -319,11 +355,13 @@ def process(
     for ex in examples:
         ex["label"] = determine_reward_label(ex["dataset_dirname"])
 
-    # Augment negatives with random 3s/4s/5s clips
+    # Augment negatives (start=0, jittered lengths 1-6s, keep 2s tail)
     examples = augment_negative_examples(examples, seed=42)
+    # Augment positives (from end, lengths 1-4s)
+    examples = augment_positive_examples(examples)
 
     # Split into train/eval
-    train_items, eval_items = split_train_eval(examples, train_ratio=0.85, seed=42)
+    train_items, eval_items = split_train_eval(examples, train_ratio=0.9, seed=42)
 
     # Copy videos and build JSON entries
     train_entries: List[Dict] = []
@@ -344,7 +382,15 @@ def process(
     # Train copies
     for idx, ex in enumerate(train_items_sorted, start=1):
         src = ex.get("source_abs_path") or ""
-        target_filename = f"train_{idx:06d}.mp4"
+        if ex.get("augment"):
+            start = float(ex.get("clip_start_sec", 0.0))
+            length = float(ex.get("clip_length_sec", 0.0))
+            len_tag = int(round(length))
+            suffix = "correct" if ex.get("label", 0) == 1 else "wrong"
+            target_filename = f"train_{idx:06d}_len{len_tag}_{suffix}.mp4"
+        else:
+            suffix = "correct" if ex.get("label", 0) == 1 else "wrong"
+            target_filename = f"train_{idx:06d}_{suffix}.mp4"
         target_rel = os.path.join("videos", target_filename)
         target_abs = os.path.join(output_path, target_rel)
         if not os.path.isfile(src):
@@ -374,7 +420,15 @@ def process(
     # Eval copies
     for idx, ex in enumerate(eval_items_sorted, start=1):
         src = ex.get("source_abs_path") or ""
-        target_filename = f"eval_{idx:06d}.mp4"
+        if ex.get("augment"):
+            start = float(ex.get("clip_start_sec", 0.0))
+            length = float(ex.get("clip_length_sec", 0.0))
+            len_tag = int(round(length))
+            suffix = "correct" if ex.get("label", 0) == 1 else "wrong"
+            target_filename = f"eval_{idx:06d}_len{len_tag}_{suffix}.mp4"
+        else:
+            suffix = "correct" if ex.get("label", 0) == 1 else "wrong"
+            target_filename = f"eval_{idx:06d}_{suffix}.mp4"
         target_rel = os.path.join("videos", target_filename)
         target_abs = os.path.join(output_path, target_rel)
         if not os.path.isfile(src):

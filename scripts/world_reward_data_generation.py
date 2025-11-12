@@ -212,13 +212,16 @@ def augment_negative_examples(
     return items + augmented
 
 
-def augment_positive_examples(items: List[Dict]) -> List[Dict]:
+def augment_positive_examples(items: List[Dict], seed: int = 42) -> List[Dict]:
     """
     For each reward=1 example, create additional clips from the end:
     lengths 1, 2, 3, 4 seconds with start placed so that the clip ends at the video end.
     """
+    rng = random.Random(seed)
     augmented: List[Dict] = []
-    base_lengths = [1.0, 2.0, 3.0, 4.0]
+    base_lengths = [2.0, 3.0, 4.0, 5.0, 6.0]
+    jitter_range = 0.25
+    min_length = 0.5
 
     for ex in items:
         if ex.get("label", 0) != 1:
@@ -229,7 +232,9 @@ def augment_positive_examples(items: List[Dict]) -> List[Dict]:
         duration = get_video_duration_seconds(src)
         if duration is None or duration <= 0.0:
             continue
-        for clip_len in base_lengths:
+        for base_len in base_lengths:
+            jitter = rng.uniform(-jitter_range, jitter_range)
+            clip_len = max(min_length, base_len + jitter)
             if duration <= clip_len:
                 continue
             start_sec = max(0.0, duration - clip_len)
@@ -246,57 +251,120 @@ def split_train_eval(
     items: List[Dict], train_ratio: float = 0.9, seed: int = 42
 ) -> Tuple[List[Dict], List[Dict]]:
     """
-    Stratified split: aim for ~50/50 label distribution in eval set when possible.
+    Grouped stratified split:
+    - Ensures train and eval are disjoint by original video (same original cannot appear in both).
+    - Aims for ~50/50 label distribution in eval when possible.
+    - Approximates the requested train_ratio by total number of items (not groups).
     """
     rng = random.Random(seed)
-    total = len(items)
-    if total == 0:
+    total_items = len(items)
+    if total_items == 0:
         return [], []
 
-    # Partition by label
-    pos = [it for it in items if it.get("label") == 1]
-    neg = [it for it in items if it.get("label") == 0]
-    rng.shuffle(pos)
-    rng.shuffle(neg)
+    # Group items by original video path (fallback to source_abs_path/dataset identifiers)
+    def group_key(it: Dict) -> str:
+        if it.get("original_video_path"):
+            return str(it.get("original_video_path"))
+        if it.get("source_abs_path"):
+            return str(it.get("source_abs_path"))
+        return f"{it.get('dataset_dirname','')}/{it.get('episode_id','')}/{it.get('segment_index','')}"
 
-    # Determine target sizes
-    train_count = int(total * train_ratio)
-    eval_target = total - train_count
-    if eval_target <= 0:
+    groups: Dict[str, List[Dict]] = {}
+    for it in items:
+        key = group_key(it)
+        groups.setdefault(key, []).append(it)
+
+    # Derive group labels (assume consistent within group)
+    pos_groups: List[Tuple[str, List[Dict]]] = []
+    neg_groups: List[Tuple[str, List[Dict]]] = []
+    for k, g in groups.items():
+        label = 1 if any(x.get("label") == 1 for x in g) else 0
+        # If mixed labels exist (shouldn't), fall back to majority
+        if label == 1:
+            pos_groups.append((k, g))
+        else:
+            neg_groups.append((k, g))
+
+    rng.shuffle(pos_groups)
+    rng.shuffle(neg_groups)
+
+    # Targets by item count
+    train_target_items = int(total_items * train_ratio)
+    eval_target_items = total_items - train_target_items
+    if eval_target_items <= 0:
         # All train
         mixed_train = list(items)
         rng.shuffle(mixed_train)
         return mixed_train, []
 
-    # Desired balanced eval composition
-    desired_pos = eval_target // 2
-    desired_neg = eval_target - desired_pos
+    desired_eval_pos = eval_target_items // 2
+    desired_eval_neg = eval_target_items - desired_eval_pos
 
-    take_pos = min(desired_pos, len(pos))
-    take_neg = min(desired_neg, len(neg))
+    eval_groups: List[Tuple[str, List[Dict]]] = []
+    eval_items_count = 0
+    eval_pos_count = 0
+    eval_neg_count = 0
 
-    remaining = eval_target - (take_pos + take_neg)
-    if remaining > 0:
-        # Allocate remaining from classes with leftover, preferring the class with more leftover
-        leftover_pos = max(0, len(pos) - take_pos)
-        leftover_neg = max(0, len(neg) - take_neg)
-        # First pass: assign to the class with more leftovers
-        while remaining > 0 and (leftover_pos > 0 or leftover_neg > 0):
-            if leftover_pos >= leftover_neg and leftover_pos > 0:
-                take_pos += 1
-                leftover_pos -= 1
-                remaining -= 1
-            elif leftover_neg > 0:
-                take_neg += 1
-                leftover_neg -= 1
-                remaining -= 1
+    # Helper to add groups without exceeding eval_target too much
+    def take_groups(source_groups: List[Tuple[str, List[Dict]]], desired_for_class: int, is_pos: bool) -> None:
+        nonlocal eval_items_count, eval_pos_count, eval_neg_count
+        for k, g in source_groups:
+            g_size = len(g)
+            current_class_count = eval_pos_count if is_pos else eval_neg_count
+            if current_class_count >= desired_for_class:
+                continue
+            # Prefer not to exceed per-class desired, but allow if we are far from total target
+            if current_class_count + g_size > desired_for_class:
+                # Skip for now; may include in a later fill step
+                continue
+            eval_groups.append((k, g))
+            eval_items_count += g_size
+            if is_pos:
+                eval_pos_count += g_size
             else:
+                eval_neg_count += g_size
+            if eval_items_count >= eval_target_items:
                 break
 
-    eval_set = pos[:take_pos] + neg[:take_neg]
-    train_set = pos[take_pos:] + neg[take_neg:]
-    rng.shuffle(train_set)
-    return train_set, eval_set
+    # First pass: try to meet per-class desired counts without exceeding them
+    take_groups(pos_groups, desired_eval_pos, is_pos=True)
+    take_groups(neg_groups, desired_eval_neg, is_pos=False)
+
+    # Second pass: if still short overall, fill from leftovers regardless of class
+    if eval_items_count < eval_target_items:
+        leftovers: List[Tuple[str, List[Dict], int]] = []  # (key, group, label)
+        chosen_keys = set(k for k, _ in eval_groups)
+        for k, g in pos_groups:
+            if k not in chosen_keys:
+                leftovers.append((k, g, 1))
+        for k, g in neg_groups:
+            if k not in chosen_keys:
+                leftovers.append((k, g, 0))
+        rng.shuffle(leftovers)
+        for k, g, lab in leftovers:
+            if eval_items_count >= eval_target_items:
+                break
+            eval_groups.append((k, g))
+            eval_items_count += len(g)
+            if lab == 1:
+                eval_pos_count += len(g)
+            else:
+                eval_neg_count += len(g)
+
+    # Remaining groups -> train
+    eval_keys = set(k for k, _ in eval_groups)
+    train_groups: List[Tuple[str, List[Dict]]] = []
+    for k, g in pos_groups + neg_groups:
+        if k not in eval_keys:
+            train_groups.append((k, g))
+
+    # Flatten
+    train_items = [it for _, g in train_groups for it in g]
+    eval_items = [it for _, g in eval_groups for it in g]
+
+    # Shuffle train for randomness; keep eval order deterministic by group sort
+    rng.shuffle(train_items)
+    return train_items, eval_items
 
 
 def safe_copy(src: str, dst: str) -> bool:
@@ -357,8 +425,8 @@ def process(
 
     # Augment negatives (start=0, jittered lengths 1-6s, keep 2s tail)
     examples = augment_negative_examples(examples, seed=42)
-    # Augment positives (from end, lengths 1-4s)
-    examples = augment_positive_examples(examples)
+    # Augment positives (from end, jittered lengths 2-6s)
+    examples = augment_positive_examples(examples, seed=42)
 
     # Split into train/eval
     train_items, eval_items = split_train_eval(examples, train_ratio=0.9, seed=42)

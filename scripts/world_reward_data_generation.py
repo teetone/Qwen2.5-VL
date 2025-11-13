@@ -10,12 +10,27 @@ from typing import Dict, List, Optional, Tuple
 from moviepy import VideoFileClip
 
 
-PROMPT_TEMPLATE = (
-    "Given the task, assign a binary reward (1=robot successfully carried out task in a single attempt, 0=anything else) "
-    "in the format: ANSWER: <score> and nothing else.\n"
-    "Task: {task}.\n"
-    "<video>"
-)
+PROMPT_TEMPLATE = """Given the task, assign a binary reward:
+- 1 = the robot successfully carried out the task in a single attempt
+- 0 = anything else
+
+Task: {task}
+
+Success criteria (reward 1):
+- Single attempt means the robot picks up the block and stacks it onto another block without dropping it or needing a second try.
+- It also counts as a single attempt if the robot is already holding the block at the start of the video, as long as it then stacks the block.
+- The stacked block does NOT need to be centered or neatly aligned; it only needs to clearly end up resting on top of the other block with the gripper released.
+
+Failure criteria (reward 0):
+- The robot drops the block, misses the stack, needs multiple tries, never clearly stacks the block, or does anything other than a clear successful stack.
+
+Respond with exactly one line in the format:
+ANSWER: <score>
+
+where <score> is 1 for success and 0 for failure, and output nothing else.
+
+<video>"""
+
 
 
 def list_immediate_subdirs(parent_dir: str) -> List[str]:
@@ -162,7 +177,7 @@ def write_clip_with_ffmpeg(src: str, dst: str, start_sec: float, clip_len_sec: f
         "-preset",
         "veryfast",
         "-crf",
-        "23",
+        "18",
         "-c:a",
         "aac",
         "-movflags",
@@ -182,8 +197,8 @@ def augment_negative_examples(
     """
     rng = random.Random(seed)
     augmented: List[Dict] = []
-    base_lengths = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
-    jitter_range = 0.25  # +/- seconds around the target length
+    base_lengths = [2.0, 3.0, 4.0, 5.0, 6.0]
+    jitter_range = 0.5  # +/- seconds around the target length
     min_length = 0.5     # guardrail
 
     for ex in items:
@@ -220,7 +235,7 @@ def augment_positive_examples(items: List[Dict], seed: int = 42) -> List[Dict]:
     rng = random.Random(seed)
     augmented: List[Dict] = []
     base_lengths = [2.0, 3.0, 4.0, 5.0, 6.0]
-    jitter_range = 0.25
+    jitter_range = 0.5
     min_length = 0.5
 
     for ex in items:

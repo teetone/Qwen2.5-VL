@@ -19,10 +19,18 @@ Task: {task}
 Success criteria (reward 1):
 - Single attempt means the robot picks up the block and stacks it onto another block without dropping it or needing a second try.
 - It also counts as a single attempt if the robot is already holding the block at the start of the video, as long as it then stacks the block.
-- The stacked block does NOT need to be centered or neatly aligned; it only needs to clearly end up resting on top of the other block with the gripper released.
+- The stacked block does NOT need to be centered or neatly aligned. It only needs to clearly end up resting on top of the other block with the gripper released.
 
 Failure criteria (reward 0):
-- The robot drops the block, misses the stack, needs multiple tries, never clearly stacks the block, or does anything other than a clear successful stack.
+- The robot has trouble picking up the block.
+- The robot drops the block after picking it up.
+- The robot releases the gripper when holding the block and the block is not stacked on the block that it was supposed to stack on.
+- The robot misses the stack and the block falls off the block that it was supposed to stack on.
+- The robot needs multiple tries to stack the block.
+- The robot never clearly stacks the block. 
+- The block remains on the table or is next to the block that it was supposed to stack on.
+- The robot does anything other than a clear successful stack.
+- The gripper is not released after the block is stacked and the gripper is still holding the block at the end of the video.
 
 Respond with exactly one line in the format:
 ANSWER: <score>

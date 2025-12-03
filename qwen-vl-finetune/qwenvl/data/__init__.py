@@ -27,12 +27,12 @@ VIDEOCHATGPT = {
 }
 
 ROBOREWARD = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_balanced.json",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train.json",
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
 }
 
 ROBOREWARD_NO_JUSTIFICATION = {
-    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_no_justification.json",
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train.json",
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
 }
 

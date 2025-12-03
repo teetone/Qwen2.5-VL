@@ -26,6 +26,7 @@ BATCH_SIZE=2                     # per-GPU batch size
 GRAD_ACCUM=16                    # global batch = 2 * 16 = 32
 NUM_TRAIN_EPOCHS=2               # ~4800 steps over 77k examples
 WDECAY=0.05
+EVAL_STEPS=200
 
 ############################
 # Output / tracking
@@ -54,7 +55,7 @@ ARGS="
  --min_pixels 784 \
  --eval_strategy no \
  --save_strategy steps \
- --save_steps 1000 \
+ --save_steps ${EVAL_STEPS} \
  --save_total_limit 2 \
  --learning_rate ${LR} \
  --weight_decay ${WDECAY} \

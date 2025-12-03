@@ -21,11 +21,12 @@ ENTRY="qwenvl/train/train_qwen.py"
 ############################
 # Hyperparameters
 ############################
-LR=3e-6                          # conservative LR, similar to your Qwen2.5 run
-BATCH_SIZE=4                     # per-GPU batch size
-GRAD_ACCUM=8                     # global batch = 4 * 8 = 32
-NUM_TRAIN_EPOCHS=2              # ~4800 steps over 77k examples
+LR=3e-6                          # conservative LR
+BATCH_SIZE=8                     # per-GPU batch size
+GRAD_ACCUM=4                     # global batch = 8 * 4 = 32
+NUM_TRAIN_EPOCHS=2               # ~4800 steps over 77k examples
 WDECAY=0.05
+EVAL_STEPS=200
 
 ############################
 # Output / tracking
@@ -54,7 +55,7 @@ ARGS="
  --min_pixels 784 \
  --eval_strategy no \
  --save_strategy steps \
- --save_steps 1000 \
+ --save_steps ${EVAL_STEPS} \
  --save_total_limit 2 \
  --learning_rate ${LR} \
  --weight_decay ${WDECAY} \

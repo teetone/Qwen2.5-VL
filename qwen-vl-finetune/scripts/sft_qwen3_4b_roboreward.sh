@@ -21,7 +21,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 ############################
 # Hyperparameters
 ############################
-LR=3e-6                          # conservative LR
+LR=2e-6                          # conservative LR
 BATCH_SIZE=8                     # per-GPU batch size
 GRAD_ACCUM=4                     # global batch = 8 * 4 = 32
 NUM_TRAIN_EPOCHS=2               # ~4800 steps over 77k examples
@@ -32,7 +32,7 @@ EVAL_STEPS=200
 # Output / tracking
 ############################
 RUN_NAME="qwen3vl-4b-roboreward"
-OUTPUT_DIR="./output_qwen3vl_4b_roboreward"
+OUTPUT_DIR="./output_qwen3vl_4b_roboreward_lr_2e-6"
 
 ############################
 # Argument string

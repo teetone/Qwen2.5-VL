@@ -32,7 +32,7 @@ EVAL_STEPS=200
 # Output / tracking
 ############################
 RUN_NAME="qwen3vl-4b-roboreward"
-OUTPUT_DIR="./output_qwen3vl_4b_roboreward_epochs_3"
+OUTPUT_DIR="./output_qwen3vl_4b_roboreward_validated"
 
 ############################
 # Argument string

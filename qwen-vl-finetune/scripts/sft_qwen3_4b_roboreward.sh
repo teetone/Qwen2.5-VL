@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=3e-6                          # conservative LR
 BATCH_SIZE=8                     # per-GPU batch size
 GRAD_ACCUM=4                     # global batch = 8 * 4 = 32
-NUM_TRAIN_EPOCHS=3               # ~4800 steps over 77k examples
+NUM_TRAIN_EPOCHS=3
 WDECAY=0.05
 EVAL_STEPS=200
 

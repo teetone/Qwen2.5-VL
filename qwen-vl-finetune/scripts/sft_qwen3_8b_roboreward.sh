@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=2e-6                          # slightly more conservative for 8B
 BATCH_SIZE=2                     # per-GPU batch size
 GRAD_ACCUM=16                    # global batch = 2 * 16 = 32
-NUM_TRAIN_EPOCHS=2               # ~4800 steps over 77k examples
+NUM_TRAIN_EPOCHS=3
 WDECAY=0.05
 EVAL_STEPS=200
 
@@ -32,7 +32,7 @@ EVAL_STEPS=200
 # Output / tracking
 ############################
 RUN_NAME="qwen3vl-8b-roboreward"
-OUTPUT_DIR="./output_qwen3vl_8b_roboreward_validated"
+OUTPUT_DIR="./output_qwen3vl_8b_roboreward_validated_125"
 
 ############################
 # Argument string

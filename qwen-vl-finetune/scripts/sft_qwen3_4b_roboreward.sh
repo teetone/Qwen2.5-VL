@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fine-tune Qwen3-VL-4B-Instruct on RoboReward (77k examples) on a single GPU
+# Fine-tune Qwen3-VL-4B-Instruct on RoboReward on a single GPU
 
 ############################
 # Distributed / DeepSpeed

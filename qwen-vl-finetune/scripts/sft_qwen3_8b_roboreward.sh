@@ -21,18 +21,18 @@ ENTRY="qwenvl/train/train_qwen.py"
 ############################
 # Hyperparameters
 ############################
-LR=2e-6                          # slightly more conservative for 8B
+LR=3e-6                          # slightly more conservative for 8B
 BATCH_SIZE=2                     # per-GPU batch size
 GRAD_ACCUM=16                    # global batch = 2 * 16 = 32
 NUM_TRAIN_EPOCHS=3
-WDECAY=0.05
+WDECAY=0.02
 EVAL_STEPS=200
 
 ############################
 # Output / tracking
 ############################
 RUN_NAME="qwen3vl-8b-roboreward"
-OUTPUT_DIR="./output_qwen3vl_8b_roboreward_validated_125"
+OUTPUT_DIR="./output_qwen3vl_8b_roboreward_validated_127"
 
 ############################
 # Argument string

@@ -26,8 +26,21 @@ VIDEOCHATGPT = {
     "data_path": "PATH_TO_VIDEOCHATGPT_DATA",
 }
 
+# Reward breakdown final_train: {1: 13648, 2: 8577, 3: 7850, 4: 6572, 5: 8425}
 ROBOREWARD = {
     "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
+}
+
+# Total final_train_roboarena_oxe: 9573 rewards={1: 2014, 2: 1799, 3: 1614, 4: 994, 5: 3152}
+ROBOREWARD_ROBOARENA_OXE = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_roboarena_oxe.json",
+    "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
+}
+
+# Total final_train_no_cut: 30593 rewards={1: 7950, 2: 4488, 3: 5783, 4: 3947, 5: 8425}
+ROBOREWARD_NO_CUT = {
+    "annotation_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected/final_train_no_cut.json",
     "data_path": "/nlp/scr4/nlp/crfm/text2image/text2image-rlhf/robotics/roboreward/roboreward/collected",
 }
 
@@ -78,6 +91,8 @@ data_dict = {
     "clevr_mc": CLEVR_MC,
     "videochatgpt": VIDEOCHATGPT,
     "roboreward": ROBOREWARD,
+    "roboreward_roboarena_oxe": ROBOREWARD_ROBOARENA_OXE,
+    "roboreward_no_cut": ROBOREWARD_NO_CUT,
     "roboreward_no_justification": ROBOREWARD_NO_JUSTIFICATION,
     "robo_reward_bench": ROBO_REWARD_BENCH,
     "robomimic": ROBOMIMIC,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fine-tune Qwen3-VL-8B-Instruct on RoboReward on a single GPU
+# Fine-tune Qwen3-VL-4B-Instruct on RoboReward (subset: roboreward_roboarena_oxe) on a single GPU
 
 ############################
 # Distributed / DeepSpeed
@@ -14,25 +14,25 @@ DEEPSPEED_CFG="./scripts/zero3.json"
 ############################
 # Model & data paths
 ############################
-LLM="Qwen/Qwen3-VL-8B-Instruct"
-DATASETS="roboreward"
+LLM="Qwen/Qwen3-VL-4B-Instruct"
+DATASETS="roboreward_roboarena_oxe"
 ENTRY="qwenvl/train/train_qwen.py"
 
 ############################
 # Hyperparameters
 ############################
-LR=5e-6                          # slightly more conservative for 8B
-BATCH_SIZE=2                     # per-GPU batch size
-GRAD_ACCUM=16                    # global batch = 2 * 16 = 32
-NUM_TRAIN_EPOCHS=3
+LR=3e-6                          # conservative LR
+BATCH_SIZE=8                     # per-GPU batch size
+GRAD_ACCUM=4                     # global batch = 8 * 4 = 32
+NUM_TRAIN_EPOCHS=10
 WDECAY=0.05
 EVAL_STEPS=200
 
 ############################
 # Output / tracking
 ############################
-RUN_NAME="qwen3vl-8b-roboreward"
-OUTPUT_DIR="./output_qwen3vl_8b_roboreward_12_20_2025"
+RUN_NAME="qwen3vl-4b-roboreward_roboarena_oxe"
+OUTPUT_DIR="./output_qwen3vl_4b_roboreward_roboarena_oxe_12_20_2025"
 
 ############################
 # Argument string

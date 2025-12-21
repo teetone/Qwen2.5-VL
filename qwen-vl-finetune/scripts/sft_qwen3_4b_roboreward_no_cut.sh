@@ -24,7 +24,7 @@ ENTRY="qwenvl/train/train_qwen.py"
 LR=3e-6                          # conservative LR
 BATCH_SIZE=8                     # per-GPU batch size
 GRAD_ACCUM=4                     # global batch = 8 * 4 = 32
-NUM_TRAIN_EPOCHS=4
+NUM_TRAIN_EPOCHS=5
 WDECAY=0.05
 EVAL_STEPS=200
 
@@ -32,7 +32,7 @@ EVAL_STEPS=200
 # Output / tracking
 ############################
 RUN_NAME="qwen3vl-4b-roboreward_no_cut"
-OUTPUT_DIR="./output_qwen3vl_4b_roboreward_no_cut_12_20_2025"
+OUTPUT_DIR="./output_qwen3vl_4b_roboreward_no_cut_12_21_2025"
 
 ############################
 # Argument string
